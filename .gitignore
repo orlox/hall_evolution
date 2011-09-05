@@ -1,0 +1,14 @@
+*.eps
+*.ps
+*.pdf
+*.dvi
+*.tex
+*.log
+*.backup
+*.swp
+
+#########################
+# executables to ignore #
+#########################
+
+as_toroidal
