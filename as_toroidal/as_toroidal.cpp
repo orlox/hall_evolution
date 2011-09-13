@@ -39,7 +39,7 @@
  * =====================================================================================
  */
 	double
-Bi ( float r, float th )
+Bi ( double r, double th )
 {
 	return pow(r,2)*pow(1-r,2)*pow(sin(th),2)*16;
 }		/* -----  end of function Bi  ----- */
@@ -50,8 +50,8 @@ Bi ( float r, float th )
  *  Description:  gives the value of chi at certain radius
  * =====================================================================================
  */
-	float
-chiValue ( float r )
+	double
+chiValue ( double r )
 {
 	return 1.0/(1.0-r*r);
 }		/* -----  end of function chi  ----- */
@@ -62,8 +62,8 @@ chiValue ( float r )
  *  Description:  returns the derivative of xi at a certain radius
  * =====================================================================================
  */
-	float
-dchiValue ( float r )
+	double
+dchiValue ( double r )
 {
 	return 2*r/pow(1-r*r,2);
 }		/* -----  end of function dchi  ----- */
@@ -80,28 +80,28 @@ main ( int argc, char *argv[] )
 {
 	double const Pi=4*atan(1);
 	//define size of steps
-	float dr=1.0/rNum;
-	float dth=Pi/thNum;
+	double dr=1.0/rNum;
+	double dth=Pi/thNum;
 
 	//create array to store results in each timestep
-	float results[rNum][tNum/plotSteps+1];
-	float results2[rNum][tNum/plotSteps+1];
-	float integrals[tNum/plotSteps+1];
-	float integrals2[tNum/plotSteps+1];
+	double results[rNum][tNum/plotSteps+1];
+	double results2[rNum][tNum/plotSteps+1];
+	double integrals[tNum/plotSteps+1];
+	double integrals2[tNum/plotSteps+1];
 
 	//Create arrays for B, chi, and dchi, and the needed sines and cosines
-	float B[rNum][thNum];
-	float Baux[rNum][thNum];
+	double B[rNum][thNum];
+	double Baux[rNum][thNum];
 #ifdef conservative
-	float chi[rNum][thNum];
+	double chi[rNum][thNum];
 #else
-	float dchi[rNum][thNum];
-	float cosines[thNum];
+	double dchi[rNum][thNum];
+	double cosines[thNum];
 #endif
-	float sines[thNum];
+	double sines[thNum];
 
 	//variables used to store the coordinate values at a given point
-	float r,th;
+	double r,th;
 
 	//set all arrays to their initial values
 	for(int i=1;i<rNum-1;i++){
@@ -125,11 +125,11 @@ main ( int argc, char *argv[] )
 	}
 	//solve all the commonly used constant terms in the finite difference scheme
 #ifndef conservative
-	float A1[rNum][thNum];
-	float A2[rNum][thNum];
-	float A3[rNum][thNum];
-	float A4[rNum][thNum];
-	float A5[rNum][thNum];
+	double A1[rNum][thNum];
+	double A2[rNum][thNum];
+	double A3[rNum][thNum];
+	double A4[rNum][thNum];
+	double A5[rNum][thNum];
 	for(int i=1;i<rNum-1;i++){
 		r=i*dr;
 		for(int j=1;j<thNum-1;j++){
@@ -149,7 +149,7 @@ main ( int argc, char *argv[] )
 		B[rNum-1][j]=0;
 
 	//simulate, use dBdt to store temporal derivative to simplify code
-	float dBdt;
+	double dBdt;
 	int plotStep=0;
 	for(int k=0;k<tNum;k++){
 		for(int i=1;i<rNum-1;i++){
@@ -231,8 +231,8 @@ main ( int argc, char *argv[] )
 			}
 		}
 		//update array with auxiliary values, and solve supposedly conserved quantities
-		float integral=0;
-		float integral2=0;
+		double integral=0;
+		double integral2=0;
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
 				if(isinf(Baux[i][j])){
