@@ -27,10 +27,10 @@
 #define thtd 0.01
 //define timestep and number of timesteps in simulation
 #define dt 0.00001
-#define tNum 1000000
-#define plotSteps 5000
+#define tNum 1100
+#define plotSteps 10
 
-//#define conservative
+#define conservative
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -188,26 +188,24 @@ main ( int argc, char *argv[] )
 				}
 				//add resistive contribution, ignore fluxes in the boundaries
 				if(i!=rNum-2){
-					dBdt+=pow(sines[j],2)*thtd/dr*(
-							pow(dr*(2*i+1)/2,2)
-							*(B[i+i][j]-B[i][j])/dr
+					dBdt+=thtd/dr*(
+							(B[i+1][j]-B[i][j])/dr
 							);
 				}
 				if(i!=1){
-					dBdt-=pow(sines[j],2)*thtd/dr*(
-							pow(dr*(2*i-1)/2,2)
-							*(B[i][j]-B[i-1][j])/dr
+					dBdt+=-thtd/dr*(
+							(B[i][j]-B[i-1][j])/dr
 							);
 				}
 				if(j!=thNum-2){
-					dBdt+=sines[j]*thtd/dth*(
-							sin(dth*(2*j+1))
+					dBdt+=sines[j]*thtd/dth/r/r*(
+							1/sin(dth*(2*j+1))
 							*(B[i][j+1]-B[i][j])/dth
 							);
 				}
 				if(j!=1){
-					dBdt+=sines[j]*thtd/dth*(
-							sin(dth*(2*j-1))
+					dBdt+=-sines[j]*thtd/dth/r/r*(
+							1/sin(dth*(2*j-1))
 							*(B[i][j]-B[i][j-1])/dth
 							);
 				}
