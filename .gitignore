@@ -4,8 +4,10 @@
 *.dvi
 *.tex
 *.log
+*.dat
 *.backup
 *.swp
+results_*
 
 #########################
 # executables to ignore #
