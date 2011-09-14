@@ -29,7 +29,7 @@
 #define thtd 0.01
 //define timestep and number of timesteps in simulation
 #define dt 0.00001
-#define tNum 100000
+#define tNum 1000000
 #define plotSteps 1000
 
 #define conservative
@@ -95,9 +95,9 @@ main ( int argc, char *argv[] )
 	double B[rNum][thNum];
 	double Baux[rNum][thNum];
 #ifdef conservative
-	double chi[rNum][thNum];
+	double chi[rNum];
 #else
-	double dchi[rNum][thNum];
+	double dchi[rNum];
 	double cosines[thNum];
 #endif
 	double sines[thNum];
@@ -108,14 +108,16 @@ main ( int argc, char *argv[] )
 	//set all arrays to their initial values
 	for(int i=1;i<rNum-1;i++){
 		r=i*dr+rmin;
+#ifdef conservative
+		//The values of chi are stored at midpoints, as needed by the
+		//conservative scheme
+		chi[i]=chiValue(r+dr/2);
+#else
+		dchi[i]=dchiValue(r);
+#endif
 		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
 			B[i][j]=Bi(r,th);
-#ifdef conservative
-			chi[i][j]=chiValue(r);
-#else
-			dchi[i][j]=dchiValue(r);
-#endif
 		}
 	}
 	for(int j=1;j<thNum-1;j++){
@@ -160,65 +162,41 @@ main ( int argc, char *argv[] )
 #ifdef conservative
 				dBdt=0;
 				//add hall contribution
-				if(i!=rNum-2){
-					dBdt+=sines[j]/dr*(
-							(B[i+1][j]+B[i][j])/2.0
-							*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
-							*(chi[i+1][j]+chi[i][j])/2.0
-							);
-				}
-				if(i==rNum-2){
-					dBdt+=sines[j]/dr*(
-							(B[i+1][j]+B[i][j])/2.0
-							*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
-							*chiValue(1.0-dr/2.0)
-							);
-				}
-				//if(i!=1){
-					dBdt+=-sines[j]/dr*(
-							(B[i][j]+B[i-1][j])/2.0
-							*(B[i][j+1]+B[i-1][j+1]-B[i][j-1]-B[i-1][j-1])/4.0/dth
-							*(chi[i][j]+chi[i-1][j])/2.0
-							);
-				//}
-				//if(j!=thNum-2){
-					dBdt+=sines[j]/dth*(
-							(B[i][j+1]+B[i][j])/2.0
-							*(B[i+1][j+1]+B[i+1][j]-B[i-1][j]-B[i-1][j+1])/4.0/dth
-							*(chi[i][j+1]+chi[i][j])/2.0
-							);
-				//}
-				//if(j!=1){
-					dBdt+=-sines[j]/dth*(
-							(B[i][j]+B[i][j-1])/2.0
-							*(B[i+1][j-1]+B[i+1][j]-B[i-1][j]-B[i-1][j-1])/4.0/dth
-							*(chi[i][j]+chi[i][j-1])/2.0
-							);
-				//}
+				dBdt+=sines[j]/dr*(
+						(B[i+1][j]+B[i][j])/2.0
+						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
+						*chi[i]
+						);
+				dBdt+=-sines[j]/dr*(
+						(B[i][j]+B[i-1][j])/2.0
+						*(B[i][j+1]+B[i-1][j+1]-B[i][j-1]-B[i-1][j-1])/4.0/dth
+						*chi[i-1]
+						);
+				dBdt+=sines[j]/dth*(
+						(B[i][j+1]+B[i][j])/2.0
+						*(B[i+1][j+1]+B[i+1][j]-B[i-1][j]-B[i-1][j+1])/4.0/dth
+						*chi[i]
+						);
+				dBdt+=-sines[j]/dth*(
+						(B[i][j]+B[i][j-1])/2.0
+						*(B[i+1][j-1]+B[i+1][j]-B[i-1][j]-B[i-1][j-1])/4.0/dth
+						*chi[i]
+						);
 				//add resistive contribution
-				//if(i!=rNum-2){
-					dBdt+=thtd/dr*(
-							(B[i+1][j]-B[i][j])/dr
-							);
-				//}
-				//if(i!=1){
-					dBdt+=-thtd/dr*(
-							(B[i][j]-B[i-1][j])/dr
-							);
-				//}
-				//if(j!=thNum-2){
-					dBdt+=sines[j]*thtd/dth/r/r*(
-							1/sin(dth*(2*j+1))
-							*(B[i][j+1]-B[i][j])/dth
-							);
-				//}
-				//if(j!=1){
-					dBdt+=-sines[j]*thtd/dth/r/r*(
-							1/sin(dth*(2*j-1))
-							*(B[i][j]-B[i][j-1])/dth
-							);
-				//}
-
+				dBdt+=thtd/dr*(
+						(B[i+1][j]-B[i][j])/dr
+						);
+				dBdt+=-thtd/dr*(
+						(B[i][j]-B[i-1][j])/dr
+						);
+				dBdt+=sines[j]*thtd/dth/r/r*(
+						1/sin(dth*(2*j+1))
+						*(B[i][j+1]-B[i][j])/dth
+						);
+				dBdt+=-sines[j]*thtd/dth/r/r*(
+						1/sin(dth*(2*j-1))
+						*(B[i][j]-B[i][j-1])/dth
+						);
 #else
 				//add hall contribution
 //				dBdt=B[i][j]*sines[j]/dth/2*(B[i][j+1]-B[i][j-1])*dchi[i][j];
