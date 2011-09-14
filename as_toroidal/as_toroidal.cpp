@@ -21,14 +21,16 @@
 #include	<fstream>
 #include	<math.h>
 //Number of steps in r and theta
-#define rNum 100
-#define thNum 40
+#define rNum 50
+#define thNum 20
+//value of the minimal r inside which there is no MF
+#define rmin 0.5
 //Ratio of hall to dissipation timescales
 #define thtd 0.01
 //define timestep and number of timesteps in simulation
 #define dt 0.00001
-#define tNum 1100
-#define plotSteps 10
+#define tNum 100000
+#define plotSteps 1000
 
 #define conservative
 
@@ -41,7 +43,7 @@
 	double
 Bi ( double r, double th )
 {
-	return pow(r,2)*pow(1-r,2)*pow(sin(th),2)*16;
+	return pow(r-rmin,3)*pow(1-r,3)*pow(sin(th),3);
 }		/* -----  end of function Bi  ----- */
 
 /* 
@@ -80,7 +82,7 @@ main ( int argc, char *argv[] )
 {
 	double const Pi=4*atan(1);
 	//define size of steps
-	double dr=1.0/rNum;
+	double dr=(1.0-rmin)/rNum;
 	double dth=Pi/thNum;
 
 	//create array to store results in each timestep
@@ -105,7 +107,7 @@ main ( int argc, char *argv[] )
 
 	//set all arrays to their initial values
 	for(int i=1;i<rNum-1;i++){
-		r=i*dr;
+		r=i*dr+rmin;
 		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
 			B[i][j]=Bi(r,th);
@@ -131,7 +133,7 @@ main ( int argc, char *argv[] )
 	double A4[rNum][thNum];
 	double A5[rNum][thNum];
 	for(int i=1;i<rNum-1;i++){
-		r=i*dr;
+		r=i*dr+rmin;
 		for(int j=1;j<thNum-1;j++){
 			A1[i][j]=sines[j]/dth/2*dchi[i][j];
 			A2[i][j]=r*pow(sines[j],2)/dr*thtd;
@@ -153,11 +155,11 @@ main ( int argc, char *argv[] )
 	int plotStep=0;
 	for(int k=0;k<tNum;k++){
 		for(int i=1;i<rNum-1;i++){
-			r=i*dr;
+			r=i*dr+rmin;
 			for(int j=1;j<thNum-1;j++){
 #ifdef conservative
 				dBdt=0;
-				//add hall contribution, ignore fluxes in the boundaries
+				//add hall contribution
 				if(i!=rNum-2){
 					dBdt+=sines[j]/dr*(
 							(B[i+1][j]+B[i][j])/2.0
@@ -165,50 +167,57 @@ main ( int argc, char *argv[] )
 							*(chi[i+1][j]+chi[i][j])/2.0
 							);
 				}
-				if(i!=1){
+				if(i==rNum-2){
+					dBdt+=sines[j]/dr*(
+							(B[i+1][j]+B[i][j])/2.0
+							*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
+							*chiValue(1.0-dr/2.0)
+							);
+				}
+				//if(i!=1){
 					dBdt+=-sines[j]/dr*(
 							(B[i][j]+B[i-1][j])/2.0
 							*(B[i][j+1]+B[i-1][j+1]-B[i][j-1]-B[i-1][j-1])/4.0/dth
 							*(chi[i][j]+chi[i-1][j])/2.0
 							);
-				}
-				if(j!=thNum-2){
+				//}
+				//if(j!=thNum-2){
 					dBdt+=sines[j]/dth*(
 							(B[i][j+1]+B[i][j])/2.0
 							*(B[i+1][j+1]+B[i+1][j]-B[i-1][j]-B[i-1][j+1])/4.0/dth
 							*(chi[i][j+1]+chi[i][j])/2.0
 							);
-				}
-				if(j!=1){
+				//}
+				//if(j!=1){
 					dBdt+=-sines[j]/dth*(
 							(B[i][j]+B[i][j-1])/2.0
 							*(B[i+1][j-1]+B[i+1][j]-B[i-1][j]-B[i-1][j-1])/4.0/dth
 							*(chi[i][j]+chi[i][j-1])/2.0
 							);
-				}
-				//add resistive contribution, ignore fluxes in the boundaries
-				if(i!=rNum-2){
+				//}
+				//add resistive contribution
+				//if(i!=rNum-2){
 					dBdt+=thtd/dr*(
 							(B[i+1][j]-B[i][j])/dr
 							);
-				}
-				if(i!=1){
+				//}
+				//if(i!=1){
 					dBdt+=-thtd/dr*(
 							(B[i][j]-B[i-1][j])/dr
 							);
-				}
-				if(j!=thNum-2){
+				//}
+				//if(j!=thNum-2){
 					dBdt+=sines[j]*thtd/dth/r/r*(
 							1/sin(dth*(2*j+1))
 							*(B[i][j+1]-B[i][j])/dth
 							);
-				}
-				if(j!=1){
+				//}
+				//if(j!=1){
 					dBdt+=-sines[j]*thtd/dth/r/r*(
 							1/sin(dth*(2*j-1))
 							*(B[i][j]-B[i][j-1])/dth
 							);
-				}
+				//}
 
 #else
 				//add hall contribution
@@ -264,7 +273,7 @@ main ( int argc, char *argv[] )
 	std::ofstream myfile;
 	myfile.open("resultsR.dat");
 	for(int i=0;i<rNum;i++){
-		r=i*dr;
+		r=i*dr+rmin;
 		myfile << r << " ";
 		for(int k=0;k<tNum/plotSteps;k++){
 			myfile << results[i][k] << " ";
