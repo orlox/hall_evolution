@@ -18,19 +18,12 @@
  */
 
 #include	<iostream>
+#include	<sstream>
 #include	<fstream>
 #include	<math.h>
-//Number of steps in r and theta
-#define rNum 50
-#define thNum 20
-//value of the minimal r inside which there is no MF
-#define rmin 0.5
-//Ratio of hall to dissipation timescales
-#define thtd 0.01
-//define timestep and number of timesteps in simulation
-#define dt 0.00001
-#define tNum 1000000
-#define plotSteps 1000
+#include	<time.h>
+#include	<string>
+#include	<stdlib.h>
 
 #define conservative
 
@@ -43,7 +36,12 @@
 	double
 Bi ( double r, double th )
 {
-	return pow(r-rmin,3)*pow(1-r,3)*pow(sin(th),3);
+	//value of the function used to define the region where the toroidal field is present
+	double alpha=(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15.0/8.0*pow(r,6))*pow(sin(th),2);
+	if(alpha<=1)
+		return 0;
+	else
+		return 40.0*pow(alpha-1,2);
 }		/* -----  end of function Bi  ----- */
 
 /* 
@@ -81,15 +79,24 @@ dchiValue ( double r )
 main ( int argc, char *argv[] )
 {
 	double const Pi=4*atan(1);
+	//Number of steps in r and theta
+	int rNum=100;
+	int thNum=100;
+	//value of the minimal r inside which there is no MF
+	double rmin=0.2;
+	//size of the theta region, used for practical reasons to define well the zone
+	//that contains the MF without unnecesary points
+	double thsize=2.5;
+	//Ratio of hall to dissipation timescales
+	double thtd=1;
+	//define timestep and number of timesteps in simulation
+	double dt=0.0000001;
+	int tNum=10000000;
+	int plotSteps=100;
+
 	//define size of steps
 	double dr=(1.0-rmin)/rNum;
-	double dth=Pi/thNum;
-
-	//create array to store results in each timestep
-	double results[rNum][tNum/plotSteps+1];
-	double results2[rNum][tNum/plotSteps+1];
-	double integrals[tNum/plotSteps+1];
-	double integrals2[tNum/plotSteps+1];
+	double dth=thsize/thNum;
 
 	//Create arrays for B, chi, and dchi, and the needed sines and cosines
 	double B[rNum][thNum];
@@ -102,8 +109,8 @@ main ( int argc, char *argv[] )
 #endif
 	double sines[thNum];
 
-	//variables used to store the coordinate values at a given point
-	double r,th;
+	//variables used to store the coordinate values at a given point, and the time
+	double r,th,t;
 
 	//set all arrays to their initial values
 	for(int i=1;i<rNum-1;i++){
@@ -116,45 +123,35 @@ main ( int argc, char *argv[] )
 		dchi[i]=dchiValue(r);
 #endif
 		for(int j=1;j<thNum-1;j++){
-			th=j*dth;
+			th=(Pi-thsize)/2+j*dth;
 			B[i][j]=Bi(r,th);
 		}
 	}
 	for(int j=1;j<thNum-1;j++){
-		th=j*dth;
+		th=(Pi-thsize)/2+j*dth;
 #ifndef conservative
 		cosines[j]=cos(th);
 #endif
 		sines[j]=sin(th);
 	}
-	//solve all the commonly used constant terms in the finite difference scheme
-#ifndef conservative
-	double A1[rNum][thNum];
-	double A2[rNum][thNum];
-	double A3[rNum][thNum];
-	double A4[rNum][thNum];
-	double A5[rNum][thNum];
-	for(int i=1;i<rNum-1;i++){
-		r=i*dr+rmin;
-		for(int j=1;j<thNum-1;j++){
-			A1[i][j]=sines[j]/dth/2*dchi[i][j];
-			A2[i][j]=r*pow(sines[j],2)/dr*thtd;
-			A3[i][j]=pow(r*sines[j],2)/dr*thtd;
-			A4[i][j]=cosines[j]*sines[j]/dth/2*thtd;
-			A5[i][j]=pow(sines[j],2)/dth*thtd;
-		}
-	}
-#endif
-
 	//set boundary values for B
 	for(int i=0;i<rNum;i++)
 		B[i][0]=B[i][thNum-1]=0;
 	for(int j=0;j<thNum;j++)
 		B[rNum-1][j]=0;
 
+	//create directory for log files
+	std::stringstream timeStream;
+	timeStream << time(0);
+	std::string mkdir="mkdir results_"+timeStream.str();
+	system(mkdir.c_str());
+	//resultsINT stores the values at each timestep of the supposedly constant integrals
+	std::ofstream resultsINT;
+	std::string filename="results_"+timeStream.str()+"/resultsINT.dat";
+	resultsINT.open(filename.c_str());
+	
 	//simulate, use dBdt to store temporal derivative to simplify code
 	double dBdt;
-	int plotStep=0;
 	for(int k=0;k<tNum;k++){
 		for(int i=1;i<rNum-1;i++){
 			r=i*dr+rmin;
@@ -190,28 +187,22 @@ main ( int argc, char *argv[] )
 						(B[i][j]-B[i-1][j])/dr
 						);
 				dBdt+=sines[j]*thtd/dth/r/r*(
-						1/sin(dth*(2*j+1))
+						1/sin((Pi-thsize)/2+dth*(2*j+1.0)/2.0)
 						*(B[i][j+1]-B[i][j])/dth
 						);
 				dBdt+=-sines[j]*thtd/dth/r/r*(
-						1/sin(dth*(2*j-1))
+						1/sin((Pi-thsize)/2+dth*(2*j-1.0)/2.0)
 						*(B[i][j]-B[i][j-1])/dth
 						);
 #else
 				//add hall contribution
-//				dBdt=B[i][j]*sines[j]/dth/2*(B[i][j+1]-B[i][j-1])*dchi[i][j];
-				dBdt=B[i][j]*(B[i][j+1]-B[i][j-1])*A1[i][j];
+				dBdt=dchi[i]*B[i][j]*(B[i][j+1]-B[i][j-1])/dth/2.0;
 				//add resistive contribution
-//				dBdt+=thtd*(
-//						r*pow(sines[j],2)/dr*(B[i+1][j]-B[i-i][j])
-//						+pow(r*sines[j],2)/dr*(B[i+1][j]+B[i-1][j]-2*B[i][j])
-//						+cosines[j]*sines[j]/dth/2*(B[i][j+1]-B[i][j-1])
-//						+pow(sines[j],2)/dth*(B[i][j+1]+B[i][j-1]-2*B[i][j])
-//						);
-				dBdt+=	A2[i][j]*(B[i+1][j]-B[i-i][j])
-						+A3[i][j]*(B[i+1][j]+B[i-1][j]-2*B[i][j])
-						+A4[i][j]*(B[i][j+1]-B[i][j-1])
-						+A5[i][j]*(B[i][j+1]+B[i][j-1]-2*B[i][j]);
+				dBdt+=thtd*(
+						(B[i+1][j]+B[i-1][j]-B[i][j])/pow(dr,2)
+						+cosines[j]/sines[j]/pow(r,2)*(B[i][j+1]-B[i][j-1])/dth/2.0
+						+1/pow(r,2)*(B[i][j+1]+B[i][j-1]-B[i][j])/pow(dth,2)
+						);
 #endif
 				//update value in auxiliary variable
 				Baux[i][j]=B[i][j]+dt*dBdt;
@@ -231,60 +222,29 @@ main ( int argc, char *argv[] )
 				integral2+=B[i][j]*i*dr;
 			}
 		}
-		//store results to be logged
+		//log results for the integrals
 		if(k%plotSteps==0){
 			std::cout << k << "/" << tNum << std::endl;
+			t=k*dt;
+			resultsINT << t << " " << integral << " " << integral2 << std::endl;
+			//log results for this timestep
+			std::stringstream fnStream;
+			fnStream << "results_" << timeStream.str() << "/data_" << k;
+			filename=fnStream.str();
+			std::ofstream results;
+			results.open(filename.c_str());
 			for(int i=0;i<rNum;i++){
-				results[i][plotStep]=B[i][thNum/2];
+				r=i*dr+rmin;
+				for(int j=0;j<thNum;j++){
+					th=(Pi-thsize)/2+j*dth;
+					results << r << " " << th << " " << B[i][j] << std::endl;
+				}
+				results << std::endl;
 			}
-			for(int j=0;j<thNum;j++){
-				results2[j][plotStep]=B[rNum/2][j];
-			}
-			integrals[plotStep]=integral;
-			integrals2[plotStep]=integral2;
-			plotStep++;
 		}
 	}
-
-	//log results to file
-	//resultsR stores the results along a line with theta=Pi/2
-	std::ofstream myfile;
-	myfile.open("resultsR.dat");
-	for(int i=0;i<rNum;i++){
-		r=i*dr+rmin;
-		myfile << r << " ";
-		for(int k=0;k<tNum/plotSteps;k++){
-			myfile << results[i][k] << " ";
-		}
-		myfile << std::endl;
-	}
-	myfile.close();
-
-	//resultsTH stores the results along a line with r=R/2
-	std::ofstream myfile2;
-	myfile2.open("resultsTH.dat");
-	for(int j=0;j<thNum;j++){
-		th=j*dth;
-		myfile2 << th << " ";
-		for(int k=0;k<tNum/plotSteps;k++){
-			myfile2 << results2[j][k] << " ";
-		}
-		myfile2 << std::endl;
-	}
-	myfile2.close();
-
-	//resultsINT stores the values at each timestep of the supposedly constant integrals
-	std::ofstream myfile3;
-	myfile3.open("resultsINT.dat");
-	double t;
-	for(int k=0;k<tNum/plotSteps;k++){
-		t=k*dt;
-		myfile3 << t << " ";
-		myfile3 << integrals[k] << " ";
-		myfile3 << integrals2[k] << " ";
-		myfile3 << std::endl;
-	}
-	myfile3.close();
+	//close integrals log file
+	resultsINT.close();
 
 	return 0;
 }				/* ----------  end of function main  ---------- */
