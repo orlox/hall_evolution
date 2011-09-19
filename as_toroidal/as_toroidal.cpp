@@ -47,23 +47,23 @@ Bi ( double r, double th )
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  chi
- *  Description:  gives the value of chi at certain radius
+ *  Description:  gives the value of chi at certain point in the star
  * =====================================================================================
  */
 	double
-chiValue ( double r )
+chiValue ( double r, double th )
 {
-	return 1.0/(1.0-r*r);
+	return 0.25/(1.0-r*r)/pow(r*sin(th),2);
 }		/* -----  end of function chi  ----- */
 
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  dchi
- *  Description:  returns the derivative of xi at a certain radius
+ *  Description:  returns the derivative of xi at a certain point in the star
  * =====================================================================================
  */
 	double
-dchiValue ( double r )
+dchiValue ( double r, double th )
 {
 	return 2*r/pow(1-r*r,2);
 }		/* -----  end of function dchi  ----- */
@@ -80,15 +80,15 @@ main ( int argc, char *argv[] )
 {
 	double const Pi=4*atan(1);
 	//Number of steps in r and theta
-	int rNum=100;
-	int thNum=100;
+	int rNum=250;
+	int thNum=90;
 	//value of the minimal r inside which there is no MF
-	double rmin=0.2;
+	double rmin=0.0;
 	//size of the theta region, used for practical reasons to define well the zone
 	//that contains the MF without unnecesary points
-	double thsize=2.5;
+	double thsize=Pi;
 	//Ratio of hall to dissipation timescales
-	double thtd=1;
+	double thtd=0.01;
 	//define timestep and number of timesteps in simulation
 	double dt=0.0000001;
 	int tNum=10000000;
@@ -102,9 +102,13 @@ main ( int argc, char *argv[] )
 	double B[rNum][thNum];
 	double Baux[rNum][thNum];
 #ifdef conservative
-	double chi[rNum];
+	//The values of chi are stored at midpoints, as needed by the conservative scheme
+	//chiR stores the values at midpoints in the radial coordinate, while
+	//chiTH stores the valus at midpoints in the polar coordinate
+	double chiR[rNum][thNum];
+	double chiTH[rNum][thNum];
 #else
-	double dchi[rNum];
+	double dchi[rNum][thNum];
 	double cosines[thNum];
 #endif
 	double sines[thNum];
@@ -115,16 +119,15 @@ main ( int argc, char *argv[] )
 	//set all arrays to their initial values
 	for(int i=1;i<rNum-1;i++){
 		r=i*dr+rmin;
-#ifdef conservative
-		//The values of chi are stored at midpoints, as needed by the
-		//conservative scheme
-		chi[i]=chiValue(r+dr/2);
-#else
-		dchi[i]=dchiValue(r);
-#endif
 		for(int j=1;j<thNum-1;j++){
 			th=(Pi-thsize)/2+j*dth;
 			B[i][j]=Bi(r,th);
+#ifdef conservative
+			chiR[i][j]=chiValue(r+dr/2,th);
+			chiTH[i][j]=chiValue(r,th+dth/2);
+#else
+			dchi[i][j]=dchiValue(r,th);
+#endif
 		}
 	}
 	for(int j=1;j<thNum-1;j++){
@@ -162,22 +165,22 @@ main ( int argc, char *argv[] )
 				dBdt+=sines[j]/dr*(
 						(B[i+1][j]+B[i][j])/2.0
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
-						*chi[i]
+						*chiR[i][j]
 						);
 				dBdt+=-sines[j]/dr*(
 						(B[i][j]+B[i-1][j])/2.0
 						*(B[i][j+1]+B[i-1][j+1]-B[i][j-1]-B[i-1][j-1])/4.0/dth
-						*chi[i-1]
+						*chiR[i-1][j]
 						);
 				dBdt+=sines[j]/dth*(
 						(B[i][j+1]+B[i][j])/2.0
 						*(B[i+1][j+1]+B[i+1][j]-B[i-1][j]-B[i-1][j+1])/4.0/dth
-						*chi[i]
+						*chiTH[i][j]
 						);
 				dBdt+=-sines[j]/dth*(
 						(B[i][j]+B[i][j-1])/2.0
 						*(B[i+1][j-1]+B[i+1][j]-B[i-1][j]-B[i-1][j-1])/4.0/dth
-						*chi[i]
+						*chiTH[i][j-1]
 						);
 				//add resistive contribution
 				dBdt+=thtd/dr*(
@@ -218,7 +221,7 @@ main ( int argc, char *argv[] )
 					return 1;
 				}
 				B[i][j]=Baux[i][j];
-				integral+=B[i][j]*sines[j];
+				integral+=B[i][j]/sines[j];
 				integral2+=B[i][j]*i*dr;
 			}
 		}
