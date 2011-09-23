@@ -199,7 +199,7 @@ main ( int argc, char *argv[] )
 						);
 #else
 				//add hall contribution
-				dBdt=dchi[i]*B[i][j]*(B[i][j+1]-B[i][j-1])/dth/2.0;
+				dBdt=dchi[i][j]*B[i][j]*(B[i][j+1]-B[i][j-1])/dth/2.0;
 				//add resistive contribution
 				dBdt+=thtd*(
 						(B[i+1][j]+B[i-1][j]-B[i][j])/pow(dr,2)
