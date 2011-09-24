@@ -1,7 +1,6 @@
 *.ps
-*.pdf
 *.dvi
-*.tex
+*.aux
 *.log
 *.dat
 *.backup
