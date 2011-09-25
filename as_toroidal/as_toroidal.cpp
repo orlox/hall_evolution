@@ -78,17 +78,27 @@ dchiValue ( double r, double th )
 	int
 main ( int argc, char *argv[] )
 {
+	//check if number of arguments is correct
+	if(argc!=8){
+		std::cout<<"ERROR: Not enough arguments provided"<<std::endl;
+		std::cout<<"usage is:"<<std::endl<<std::endl;
+		std::cout<<"as_toroidal <rNum> <thNum> <dt> <tNum> <tNumPlot> <rmin> <thtd>"<<std::endl<<std::endl;
+		return 0;
+	}
+	//########################READ ARGUMENTS FROM ARGV######################
+	//NO CHECK ARE DONE ON THE INPUT FROM TERMINAL!!
 	//Number of steps in r and theta
-	int rNum=250;
-	int thNum=90;
-	//value of the minimal r inside which there is no MF
-	double rmin=0.0;
-	//Ratio of hall to dissipation timescales
-	double thtd=0.01;
+	int rNum=atoi(argv[1]);
+	int thNum=atoi(argv[2]);
 	//define timestep and number of timesteps in simulation
-	double dt=0.0000001;
-	int tNum=10000000;
-	int plotSteps=100;
+	double dt=atof(argv[3]);
+	int tNum=atoi(argv[4]);
+	int plotSteps=atoi(argv[5]);
+	//value of the minimal r inside which there is no MF
+	double rmin=atof(argv[6]);
+	//Ratio of hall to dissipation timescales
+	double thtd=atof(argv[7]);
+	//######################################################################
 
 	//define size of steps
 	double dr=(1.0-rmin)/rNum;
@@ -149,9 +159,40 @@ main ( int argc, char *argv[] )
 	std::ofstream resultsINT;
 	std::string filename="results_"+timeStream.str()+"/resultsINT.dat";
 	resultsINT.open(filename.c_str());
+
+	//Display info
+	std::cout<<std::endl;
+	std::cout<< "#################################################"<< std::endl;
+	std::cout<< "##########Axisymmetric Hall Evolution############"<< std::endl;
+	std::cout<< "#################################################"<< std::endl;
+	std::cout<< "PARAMETERS CHOSEN:"<< std::endl;
+	std::cout<< "-Number of Radial steps: "<< rNum << std::endl;
+	std::cout<< "-Number of Angular steps: "<< thNum << std::endl;
+	std::cout<< "-Size of timestep: "<< dt << std::endl;
+	std::cout<< "-Number of Time steps: "<< tNum << std::endl;
+	std::cout<< "-Save output every "<< plotSteps << " steps" << std::endl;
+	std::cout<< "-Minimun radius: "<< rmin << std::endl;
+	std::cout<< "-Ratio of hall to dissipative timescales: "<< thtd << std::endl;
+	std::cout<<std::endl;
+	std::cout<< "Results stored in folder results_" << timeStream.str() << std::endl;
+	std::cout<<std::endl;
+
+	//_params.dat stores the simulation parameters
+	std::ofstream params;
+	std::string filename2="results_"+timeStream.str()+"/params.dat";
+	params.open(filename2.c_str());
+	params<< "rNum:"<< rNum << std::endl;
+	params<< "thNum:"<< thNum << std::endl;
+	params<< "dt:"<< dt << std::endl;
+	params<< "tNum:"<< tNum << std::endl;
+	params<< "plotSteps:"<< plotSteps << std::endl;
+	params<< "rmin:"<< rmin << std::endl;
+	params<< "thtd:"<< thtd << std::endl;
+	params.close();
 	
 	//simulate, use dBdt to store temporal derivative to simplify code
 	double dBdt;
+	std::cout<< "Starting Simulation!" << std::endl;
 	for(int k=0;k<tNum;k++){
 		for(int i=1;i<rNum-1;i++){
 			r=i*dr+rmin;
@@ -236,8 +277,7 @@ main ( int argc, char *argv[] )
 			for(int i=0;i<rNum;i++){
 				r=i*dr+rmin;
 				for(int j=0;j<thNum;j++){
-					th=j*dth;
-					results << r << " " << th << " " << B[i][j] << std::endl;
+					results << B[i][j] << " ";
 				}
 				results << std::endl;
 			}
