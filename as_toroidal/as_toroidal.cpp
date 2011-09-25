@@ -78,15 +78,11 @@ dchiValue ( double r, double th )
 	int
 main ( int argc, char *argv[] )
 {
-	double const Pi=4*atan(1);
 	//Number of steps in r and theta
 	int rNum=250;
 	int thNum=90;
 	//value of the minimal r inside which there is no MF
 	double rmin=0.0;
-	//size of the theta region, used for practical reasons to define well the zone
-	//that contains the MF without unnecesary points
-	double thsize=Pi;
 	//Ratio of hall to dissipation timescales
 	double thtd=0.01;
 	//define timestep and number of timesteps in simulation
@@ -96,7 +92,8 @@ main ( int argc, char *argv[] )
 
 	//define size of steps
 	double dr=(1.0-rmin)/rNum;
-	double dth=thsize/thNum;
+	double const Pi=4*atan(1);
+	double dth=Pi/thNum;
 
 	//Create arrays for B, chi, and dchi, and the needed sines and cosines
 	double B[rNum][thNum];
@@ -120,7 +117,7 @@ main ( int argc, char *argv[] )
 	for(int i=1;i<rNum-1;i++){
 		r=i*dr+rmin;
 		for(int j=1;j<thNum-1;j++){
-			th=(Pi-thsize)/2+j*dth;
+			th=j*dth;
 			B[i][j]=Bi(r,th);
 #ifdef conservative
 			chiR[i][j]=chiValue(r+dr/2,th);
@@ -131,7 +128,7 @@ main ( int argc, char *argv[] )
 		}
 	}
 	for(int j=1;j<thNum-1;j++){
-		th=(Pi-thsize)/2+j*dth;
+		th=j*dth;
 #ifndef conservative
 		cosines[j]=cos(th);
 #endif
@@ -190,11 +187,11 @@ main ( int argc, char *argv[] )
 						(B[i][j]-B[i-1][j])/dr
 						);
 				dBdt+=sines[j]*thtd/dth/r/r*(
-						1/sin((Pi-thsize)/2+dth*(2*j+1.0)/2.0)
+						1/sin(dth*(2*j+1.0)/2.0)
 						*(B[i][j+1]-B[i][j])/dth
 						);
 				dBdt+=-sines[j]*thtd/dth/r/r*(
-						1/sin((Pi-thsize)/2+dth*(2*j-1.0)/2.0)
+						1/sin(dth*(2*j-1.0)/2.0)
 						*(B[i][j]-B[i][j-1])/dth
 						);
 #else
@@ -239,7 +236,7 @@ main ( int argc, char *argv[] )
 			for(int i=0;i<rNum;i++){
 				r=i*dr+rmin;
 				for(int j=0;j<thNum;j++){
-					th=(Pi-thsize)/2+j*dth;
+					th=j*dth;
 					results << r << " " << th << " " << B[i][j] << std::endl;
 				}
 				results << std::endl;
