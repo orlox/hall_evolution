@@ -29,23 +29,6 @@
 
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  Bi
- *  Description:  Gives the initial conditions for B at a given r and theta
- * =====================================================================================
- */
-	double
-Bi ( double r, double th )
-{
-	//value of the function used to define the region where the toroidal field is present
-	double alpha=(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15.0/8.0*pow(r,6))*pow(sin(th),2);
-	if(alpha<=1)
-		return 0;
-	else
-		return 40.0*pow(alpha-1,2);
-}		/* -----  end of function Bi  ----- */
-
-/* 
- * ===  FUNCTION  ======================================================================
  *         Name:  chi
  *  Description:  gives the value of chi at certain point in the star
  * =====================================================================================
@@ -67,6 +50,24 @@ dchiValue ( double r, double th )
 {
 	return 2*r/pow(1-r*r,2);
 }		/* -----  end of function dchi  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  Bi
+ *  Description:  Gives the initial conditions for B at a given r and theta
+ * =====================================================================================
+ */
+	double
+Bi ( double r, double th )
+{
+	//value of the function used to define the region where the toroidal field is present
+	//double alpha=(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15.0/8.0*pow(r,6))*pow(sin(th),2);
+	double chi=chiValue(r,th);
+	if(chi>=1.5)
+		return 0;
+	else
+		return pow(chi-1.5,2);
+}		/* -----  end of function Bi  ----- */
 
 /* 
  * ===  FUNCTION  ======================================================================
