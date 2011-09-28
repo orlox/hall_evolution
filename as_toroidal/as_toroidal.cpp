@@ -39,18 +39,6 @@ chiValue ( double r, double th )
 
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  dchi
- *  Description:  returns the derivative of xi at a certain point in the star
- * =====================================================================================
- */
-	double
-dchiValue ( double r, double th )
-{
-	return 2*r/pow(1-r*r,2);
-}		/* -----  end of function dchi  ----- */
-
-/* 
- * ===  FUNCTION  ======================================================================
  *         Name:  Bi
  *  Description:  Gives the initial conditions for B at a given r and theta
  * =====================================================================================
