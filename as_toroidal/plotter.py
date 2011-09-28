@@ -8,19 +8,6 @@ from pylab import *
 import sys
 import math
 
-#Funtion that returns the nearest value in the 
-def Bvalue(x,y):
-    r=math.sqrt(x**2+y**2)
-    if r>=1.0:
-        return 0
-    th=math.acos(y/r)
-    rStep=int(r/dr)
-    thStep=int(th/dth)
-    if rStep==0 or rStep==rNum or thStep==0 or thStep==thNum:
-        return 0
-    return B[rStep][thStep]
-
-
 # First argument to program is folder with results
 folder=sys.argv[1]
 
@@ -57,6 +44,26 @@ y = arange(-1, 1, dx)
 X,Y = meshgrid(x, y)
 Z=zeros((len(x),len(y)))
 
+#get place in B grid that corresponds to each place in Z grid
+grid=zeros((len(x),len(y),2))
+i,j=0,0
+for xvalue in x :
+    for yvalue in y:
+        r=math.sqrt(xvalue**2+yvalue**2)
+        th=math.acos(yvalue/r)
+        rStep=int(r/dr)
+        thStep=int(th/dth)
+        if rStep==0 or rStep>=rNum or thStep==0 or thStep>=thNum:
+            grid[i][j][0]=0
+            grid[i][j][1]=0
+            j+=1
+            continue
+        grid[i][j][0]=rStep
+        grid[i][j][1]=thStep
+        j+=1
+    j=0
+    i+=1
+
 k=plotSteps
 while 1:
     #read first file
@@ -80,7 +87,7 @@ while 1:
     i,j=0,0
     for xvalue in x :
         for yvalue in y:
-            Z[i][j]=Bvalue(xvalue,yvalue)
+            Z[i][j]=B[grid[i][j][0]][grid[i][j][1]]
             j+=1
         j=0
         i+=1
