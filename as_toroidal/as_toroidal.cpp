@@ -25,8 +25,6 @@
 #include	<string>
 #include	<stdlib.h>
 
-#define conservative
-
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  chi
@@ -109,16 +107,11 @@ main ( int argc, char *argv[] )
 	//Create arrays for B, chi, and dchi, and the needed sines and cosines
 	double B[rNum][thNum];
 	double Baux[rNum][thNum];
-#ifdef conservative
 	//The values of chi are stored at midpoints, as needed by the conservative scheme
 	//chiR stores the values at midpoints in the radial coordinate, while
 	//chiTH stores the valus at midpoints in the polar coordinate
 	double chiR[rNum][thNum];
 	double chiTH[rNum][thNum];
-#else
-	double dchi[rNum][thNum];
-	double cosines[thNum];
-#endif
 	double sines[thNum];
 
 	//variables used to store the coordinate values at a given point, and the time
@@ -130,19 +123,12 @@ main ( int argc, char *argv[] )
 		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
 			B[i][j]=Bi(r,th);
-#ifdef conservative
 			chiR[i][j]=chiValue(r+dr/2,th);
 			chiTH[i][j]=chiValue(r,th+dth/2);
-#else
-			dchi[i][j]=dchiValue(r,th);
-#endif
 		}
 	}
 	for(int j=1;j<thNum-1;j++){
 		th=j*dth;
-#ifndef conservative
-		cosines[j]=cos(th);
-#endif
 		sines[j]=sin(th);
 	}
 	//set boundary values for B
@@ -198,7 +184,6 @@ main ( int argc, char *argv[] )
 		for(int i=1;i<rNum-1;i++){
 			r=i*dr+rmin;
 			for(int j=1;j<thNum-1;j++){
-#ifdef conservative
 				dBdt=0;
 				//add hall contribution
 				dBdt+=sines[j]/dr*(
@@ -236,16 +221,6 @@ main ( int argc, char *argv[] )
 						1/sin(dth*(2*j-1.0)/2.0)
 						*(B[i][j]-B[i][j-1])/dth
 						);
-#else
-				//add hall contribution
-				dBdt=dchi[i][j]*B[i][j]*(B[i][j+1]-B[i][j-1])/dth/2.0;
-				//add resistive contribution
-				dBdt+=thtd*(
-						(B[i+1][j]+B[i-1][j]-B[i][j])/pow(dr,2)
-						+cosines[j]/sines[j]/pow(r,2)*(B[i][j+1]-B[i][j-1])/dth/2.0
-						+1/pow(r,2)*(B[i][j+1]+B[i][j-1]-B[i][j])/pow(dth,2)
-						);
-#endif
 				//update value in auxiliary variable
 				Baux[i][j]=B[i][j]+dt*dBdt;
 			}
