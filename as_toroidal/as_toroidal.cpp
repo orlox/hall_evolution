@@ -225,17 +225,17 @@ main ( int argc, char *argv[] )
 //						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
 //						*chiR[i][j]
 //						);
-//				dBr+=hall_rflux_plus[i][j]
-//						*(B[i+1][j]+B[i][j])
-//						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+				dBr+=hall_rflux_plus[i][j]
+						*(B[i+1][j]+B[i][j])
+						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
 //				dB+=sines[j]/dth*(
 //						-(B[i][j+1]+B[i][j])/2.0
 //						*(B[i+1][j+1]+B[i+1][j]-B[i-1][j]-B[i-1][j+1])/4.0/dr
 //						*chiTH[i][j]
 //						);
-//				dBth+=-hall_thflux_plus[i][j]
-//						*(B[i][j+1]+B[i][j])
-//						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+				dBth+=-hall_thflux_plus[i][j]
+						*(B[i][j+1]+B[i][j])
+						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
 				//add resistive contribution
 //				dB+=thtd/dr*(
 //						(B[i+1][j]-B[i][j])/dr
