@@ -30,14 +30,14 @@ thtd=float(data[1])
 params.close()
 
 #solve values of dr and dth
-dr=1.0/rNum
+dr=(1.0-rmin)/rNum
 dth=math.pi/thNum
 
 #Create array to store B at each step
 B=zeros((rNum,thNum));
 
 # make this smaller to increase the resolution
-dx=0.01
+dx=0.005
 # these variables are used by matplotlib
 x = arange(0, 1, dx)
 y = arange(-1, 1, dx)
@@ -51,9 +51,9 @@ for xvalue in x :
     for yvalue in y:
         r=math.sqrt(xvalue**2+yvalue**2)
         th=math.acos(yvalue/r)
-        rStep=int(r/dr)
+        rStep=int((r-rmin)/dr)
         thStep=int(th/dth)
-        if rStep==0 or rStep>=rNum or thStep==0 or thStep>=thNum:
+        if rStep<=0 or rStep>=rNum or thStep==0 or thStep>=thNum:
             grid[i][j][0]=0
             grid[i][j][1]=0
             j+=1
@@ -64,7 +64,7 @@ for xvalue in x :
     j=0
     i+=1
 
-k=plotSteps
+k=0
 while 1:
     #read first file
     data

@@ -34,7 +34,7 @@
 	double
 chiValue ( double r, double th )
 {
-	return 0.25/(1.0-r*r)/pow(r*sin(th),2);
+	return 1/pow(r*sin(th),2);//0.25/(1.0-r*r)/pow(r*sin(th),2);
 }		/* -----  end of function chi  ----- */
 
 /* 
@@ -47,12 +47,9 @@ chiValue ( double r, double th )
 Bi ( double r, double th )
 {
 	//value of the function used to define the region where the toroidal field is present
-	//double alpha=(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15.0/8.0*pow(r,6))*pow(sin(th),2);
-	double chi=chiValue(r,th);
-	if(chi>=1.5)
-		return 0;
-	else
-		return pow(chi-1.5,2);
+	double k=6.572013199016351;
+	double b=-2.125069381043848;
+	return ((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
 }		/* -----  end of function Bi  ----- */
 
 /* 
@@ -96,23 +93,17 @@ main ( int argc, char *argv[] )
 	double B[rNum][thNum];
 	double Baux[rNum][thNum];
 	//The values of chi are stored at midpoints, as needed by the conservative scheme
-	//chiR stores the values at midpoints in the radial coordinate, while
-	//chiTH stores the valus at midpoints in the polar coordinate
-	double chiR[rNum][thNum];
-	double chiTH[rNum][thNum];
 	double sines[thNum];
 
 	//variables used to store the coordinate values at a given point, and the time
 	double r,th,t;
 
 	//set all arrays to their initial values
-	for(int i=1;i<rNum-1;i++){
+	for(int i=0;i<rNum-1;i++){
 		r=i*dr+rmin;
-		for(int j=1;j<thNum-1;j++){
+		for(int j=0;j<thNum-1;j++){
 			th=j*dth;
 			B[i][j]=Bi(r,th);
-			chiR[i][j]=chiValue(r+dr/2,th);
-			chiTH[i][j]=chiValue(r,th+dth/2);
 		}
 	}
 	for(int j=1;j<thNum-1;j++){
@@ -123,7 +114,22 @@ main ( int argc, char *argv[] )
 	for(int i=0;i<rNum;i++)
 		B[i][0]=B[i][thNum-1]=0;
 	for(int j=0;j<thNum;j++)
-		B[rNum-1][j]=0;
+		B[0][j]=B[rNum-1][j]=0;
+	//Solve repeated values in the calculations
+	//Includes multiplication by dt
+	float hall_rflux_plus[rNum][thNum];
+	float hall_thflux_plus[rNum][thNum];
+	float res_rflux=dt*thtd/dr/dr;
+	float res_thflux_plus[rNum][thNum];
+	for(int i=0;i<rNum-1;i++){
+		r=i*dr+rmin;
+		for(int j=0;j<thNum-1;j++){
+			th=j*dth;
+			hall_rflux_plus[i][j]=dt*chiValue(r+dr/2,th)/8.0/dr/dth;
+			hall_thflux_plus[i][j]=dt*chiValue(r,th+dth/2)/8.0/dr/dth;
+			res_thflux_plus[i][j]=dt*thtd/dth/dth/r/r/sin(dth*(2*j+1.0)/2.0);
+		}
+	}
 
 	//create directory for log files
 	std::stringstream timeStream;
@@ -165,74 +171,33 @@ main ( int argc, char *argv[] )
 	params<< "thtd:"<< thtd << std::endl;
 	params.close();
 	
-	//simulate, use dBdt to store temporal derivative to simplify code
-	double dBdt;
+	//simulate, use dBr and dBth to store changes due to flux
+	//in the r and theta directions
+	//flux and energy are the supposedly conserved quantities
+	double dBr;
+	double dBth;
+	double flux=0;
+	double energy=0;
 	std::cout<< "Starting Simulation!" << std::endl;
-	for(int k=0;k<tNum;k++){
-		for(int i=1;i<rNum-1;i++){
-			r=i*dr+rmin;
-			for(int j=1;j<thNum-1;j++){
-				dBdt=0;
-				//add hall contribution
-				dBdt+=sines[j]/dr*(
-						(B[i+1][j]+B[i][j])/2.0
-						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
-						*chiR[i][j]
-						);
-				dBdt+=-sines[j]/dr*(
-						(B[i][j]+B[i-1][j])/2.0
-						*(B[i][j+1]+B[i-1][j+1]-B[i][j-1]-B[i-1][j-1])/4.0/dth
-						*chiR[i-1][j]
-						);
-				dBdt+=sines[j]/dth*(
-						(B[i][j+1]+B[i][j])/2.0
-						*(B[i+1][j+1]+B[i+1][j]-B[i-1][j]-B[i-1][j+1])/4.0/dth
-						*chiTH[i][j]
-						);
-				dBdt+=-sines[j]/dth*(
-						(B[i][j]+B[i][j-1])/2.0
-						*(B[i+1][j-1]+B[i+1][j]-B[i-1][j]-B[i-1][j-1])/4.0/dth
-						*chiTH[i][j-1]
-						);
-				//add resistive contribution
-				dBdt+=thtd/dr*(
-						(B[i+1][j]-B[i][j])/dr
-						);
-				dBdt+=-thtd/dr*(
-						(B[i][j]-B[i-1][j])/dr
-						);
-				dBdt+=sines[j]*thtd/dth/r/r*(
-						1/sin(dth*(2*j+1.0)/2.0)
-						*(B[i][j+1]-B[i][j])/dth
-						);
-				dBdt+=-sines[j]*thtd/dth/r/r*(
-						1/sin(dth*(2*j-1.0)/2.0)
-						*(B[i][j]-B[i][j-1])/dth
-						);
-				//update value in auxiliary variable
-				Baux[i][j]=B[i][j]+dt*dBdt;
-			}
-		}
-		//update array with auxiliary values, and solve supposedly conserved quantities
-		double integral=0;
-		double integral2=0;
-		for(int i=1;i<rNum-1;i++){
-			for(int j=1;j<thNum-1;j++){
-				if(isinf(Baux[i][j])){
-					std::cout << "Blew up at step " << k << "in place " << i << "," << j << std::endl;
-					return 1;
-				}
-				B[i][j]=Baux[i][j];
-				integral+=B[i][j]/sines[j];
-				integral2+=B[i][j]*i*dr;
-			}
-		}
-		//log results for the integrals
+	for(int k=0;k<=tNum;k++){
+		//log results for the integrals and the conserved values, if it corresponds
 		if(k%plotSteps==0){
-			std::cout << k << "/" << tNum << std::endl;
+			flux=0;
+			energy=0;
+			//Solve conserved quantities
+			for(int i=1;i<rNum-1;i++){
+				r=i*dr+rmin;
+				for(int j=1;j<thNum-1;j++){
+					flux+=B[i][j]/sines[j];
+					energy+=pow(B[i][j],2)/r;
+				}
+			}
+			flux=flux*dr*dth;
+			energy=energy*dr*dth;
+			//log conserved quantities to file
 			t=k*dt;
-			resultsINT << t << " " << integral << " " << integral2 << std::endl;
-			//log results for this timestep
+			resultsINT << t << " " << flux << " " << energy << std::endl;
+			//log the values of B for this timestep
 			std::stringstream fnStream;
 			fnStream << "results_" << timeStream.str() << "/data_" << k;
 			filename=fnStream.str();
@@ -244,6 +209,59 @@ main ( int argc, char *argv[] )
 					results << B[i][j] << " ";
 				}
 				results << std::endl;
+			}
+			//put messege to std::cout to inform progress
+			std::cout << k << "/" << tNum << std::endl;
+		}
+
+
+		for(int i=0;i<rNum-1;i++){
+			for(int j=0;j<thNum-1;j++){
+				dBr=0;
+				dBth=0;
+				//add hall contribution
+//				dB+=sines[j]/dr*(
+//						(B[i+1][j]+B[i][j])/2.0
+//						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
+//						*chiR[i][j]
+//						);
+//				dBr+=hall_rflux_plus[i][j]
+//						*(B[i+1][j]+B[i][j])
+//						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+//				dB+=sines[j]/dth*(
+//						-(B[i][j+1]+B[i][j])/2.0
+//						*(B[i+1][j+1]+B[i+1][j]-B[i-1][j]-B[i-1][j+1])/4.0/dr
+//						*chiTH[i][j]
+//						);
+//				dBth+=-hall_thflux_plus[i][j]
+//						*(B[i][j+1]+B[i][j])
+//						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+				//add resistive contribution
+//				dB+=thtd/dr*(
+//						(B[i+1][j]-B[i][j])/dr
+//						);
+				dBr+=res_rflux*(B[i+1][j]-B[i][j])/sines[j];
+//				dB+=sines[j]*thtd/dth/r/r*(
+//						1/sin(dth*(2*j+1.0)/2.0)
+//						*(B[i][j+1]-B[i][j])/dth
+//						);
+				dBth+=res_thflux_plus[i][j]*(B[i][j+1]-B[i][j]);
+				//update value in auxiliary array
+				//values in the boundaries are irrelevant, and not passed from the
+				//auxiliary to the definite array
+				Baux[i][j]+=(dBr+dBth)*sines[j];
+				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
+				Baux[i][j+1]-=dBth*sines[j+1];
+			}
+		}
+		//update array with auxiliary values
+		for(int i=1;i<rNum-1;i++){
+			for(int j=1;j<thNum-1;j++){
+				if(isinf(Baux[i][j])){
+					std::cout << "Blew up at step " << k << "in place " << i << "," << j << std::endl;
+					return 1;
+				}
+				B[i][j]=Baux[i][j];
 			}
 		}
 	}

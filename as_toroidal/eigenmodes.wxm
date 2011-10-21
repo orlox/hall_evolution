@@ -1,0 +1,45 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 0.8.7 ] */
+
+/* [wxMaxima: input   start ] */
+spherical_bessel_j(2,k*x)+b*spherical_bessel_y(2,k*x);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+(-(1-24/(8*k^2*x^2))*sin(k*x)-(3*cos(k*x))/(k*x))/(k*x)-(b*((3*sin(k*x))/(k*x)-(1-24/(8*k^2*x^2))*cos(k*x)))/(k*x);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+wxplot2d([spherical_bessel_j(1,0.2*k)*spherical_bessel_y(1,k)-spherical_bessel_j(1,k)*spherical_bessel_y(1,0.2*k)], [k,2,8])$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+find_root(spherical_bessel_j(1,0.2*k)*spherical_bessel_y(1,k)-spherical_bessel_j(1,k)*spherical_bessel_y(1,0.2*k),k,4,5);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+kk:%;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+1/kk**2/2;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+B:-spherical_bessel_j(1,kk)/spherical_bessel_y(1,kk);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+wxplot2d([spherical_bessel_j(1,kk*x)+B*spherical_bessel_y(1,kk*x)], [x,0.2,1])$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+spherical_bessel_j(1,k*r)+b*spherical_bessel_y(1,k*r);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+1/kk**2;
+/* [wxMaxima: input   end   ] */
+
+/* Maxima can't load/batch files which end with a comment! */
+"Created with wxMaxima"$
