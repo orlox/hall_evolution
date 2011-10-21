@@ -40,13 +40,16 @@ chiValue ( double r, double th )
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  Bi
- *  Description:  Gives the initial conditions for B at a given r and theta
+ *  Description:  Gives the initial conditions for B at a given r and theta, the minimun radius is part of the initial condition, so it's included in this block.
  * =====================================================================================
  */
+double rmin=0.5;
+
 	double
 Bi ( double r, double th )
 {
-	//value of the function used to define the region where the toroidal field is present
+	//This initial condition represent the fundamental eigenmode of pure ohm
+	//evolution. k and b depend on 
 	double k=6.572013199016351;
 	double b=-2.125069381043848;
 	return ((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
@@ -63,10 +66,10 @@ Bi ( double r, double th )
 main ( int argc, char *argv[] )
 {
 	//check if number of arguments is correct
-	if(argc!=8){
+	if(argc!=7){
 		std::cout<<"ERROR: Not enough arguments provided"<<std::endl;
 		std::cout<<"usage is:"<<std::endl<<std::endl;
-		std::cout<<"as_toroidal <rNum> <thNum> <dt> <tNum> <tNumPlot> <rmin> <thtd>"<<std::endl<<std::endl;
+		std::cout<<"as_toroidal <rNum> <thNum> <dt> <tNum> <tNumPlot> <thtd>"<<std::endl<<std::endl;
 		return 0;
 	}
 	//########################READ ARGUMENTS FROM ARGV######################
@@ -78,10 +81,8 @@ main ( int argc, char *argv[] )
 	double dt=atof(argv[3]);
 	int tNum=atoi(argv[4]);
 	int plotSteps=atoi(argv[5]);
-	//value of the minimal r inside which there is no MF
-	double rmin=atof(argv[6]);
 	//Ratio of hall to dissipation timescales
-	double thtd=atof(argv[7]);
+	double thtd=atof(argv[6]);
 	//######################################################################
 
 	//define size of steps
@@ -92,31 +93,30 @@ main ( int argc, char *argv[] )
 	//Create arrays for B, chi, and dchi, and the needed sines and cosines
 	double B[rNum][thNum];
 	double Baux[rNum][thNum];
-	//The values of chi are stored at midpoints, as needed by the conservative scheme
 	double sines[thNum];
 
 	//variables used to store the coordinate values at a given point, and the time
 	double r,th,t;
 
-	//set all arrays to their initial values
-	for(int i=0;i<rNum-1;i++){
+	//set initial values
+	for(int i=1;i<rNum-1;i++){
 		r=i*dr+rmin;
-		for(int j=0;j<thNum-1;j++){
+		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
 			B[i][j]=Bi(r,th);
 		}
-	}
-	for(int j=1;j<thNum-1;j++){
-		th=j*dth;
-		sines[j]=sin(th);
 	}
 	//set boundary values for B
 	for(int i=0;i<rNum;i++)
 		B[i][0]=B[i][thNum-1]=0;
 	for(int j=0;j<thNum;j++)
 		B[0][j]=B[rNum-1][j]=0;
-	//Solve repeated values in the calculations
-	//Includes multiplication by dt
+	//solve sines at each point in the grid
+	for(int j=1;j<thNum-1;j++){
+		th=j*dth;
+		sines[j]=sin(th);
+	}
+	//Solve repeated values in the calculations, includes multiplication by dt
 	float hall_rflux_plus[rNum][thNum];
 	float hall_thflux_plus[rNum][thNum];
 	float res_rflux=dt*thtd/dr/dr;
@@ -219,36 +219,38 @@ main ( int argc, char *argv[] )
 			for(int j=0;j<thNum-1;j++){
 				dBr=0;
 				dBth=0;
-				//add hall contribution
-//				dB+=sines[j]/dr*(
-//						(B[i+1][j]+B[i][j])/2.0
-//						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
-//						*chiR[i][j]
-//						);
+				//Hall contribution, radial flux
+				//dBr+=dt*sines[j]/dr*(
+				//		(B[i+1][j]+B[i][j])/2.0
+				//		*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4.0/dth
+				//		*chiR[i][j]
+				//		);
 				dBr+=hall_rflux_plus[i][j]
 						*(B[i+1][j]+B[i][j])
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
-//				dB+=sines[j]/dth*(
-//						-(B[i][j+1]+B[i][j])/2.0
-//						*(B[i+1][j+1]+B[i+1][j]-B[i-1][j]-B[i-1][j+1])/4.0/dr
-//						*chiTH[i][j]
-//						);
+				//Hall contribution, theta flux
+				//dBth+=sines[j]/dth*(
+				//		-(B[i][j+1]+B[i][j])/2.0
+				//		*(B[i+1][j+1]+B[i+1][j]-B[i-1][j]-B[i-1][j+1])/4.0/dr
+				//		*chiTH[i][j]
+				//		);
 				dBth+=-hall_thflux_plus[i][j]
 						*(B[i][j+1]+B[i][j])
 						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
-				//add resistive contribution
-//				dB+=thtd/dr*(
-//						(B[i+1][j]-B[i][j])/dr
-//						);
+				//Resistive contribution, radial flux
+				//dB+=thtd/dr*(
+				//		(B[i+1][j]-B[i][j])/dr
+				//		);
 				dBr+=res_rflux*(B[i+1][j]-B[i][j])/sines[j];
-//				dB+=sines[j]*thtd/dth/r/r*(
-//						1/sin(dth*(2*j+1.0)/2.0)
-//						*(B[i][j+1]-B[i][j])/dth
-//						);
+				//Resistive contribution, theta flux
+				//dB+=sines[j]*thtd/dth/r/r*(
+				//		1/sin(dth*(2*j+1.0)/2.0)
+				//		*(B[i][j+1]-B[i][j])/dth
+				//		);
 				dBth+=res_thflux_plus[i][j]*(B[i][j+1]-B[i][j]);
-				//update value in auxiliary array
-				//values in the boundaries are irrelevant, and not passed from the
-				//auxiliary to the definite array
+				//Update value in auxiliary array, updating also points forward
+				//in the grid. Values in the boundaries are irrelevant, and not
+				//passed from the auxiliary to the definite array.
 				Baux[i][j]+=(dBr+dBth)*sines[j];
 				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
 				Baux[i][j+1]-=dBth*sines[j+1];
@@ -257,6 +259,7 @@ main ( int argc, char *argv[] )
 		//update array with auxiliary values
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
+				//check for blowups, exit program if that happens
 				if(isinf(Baux[i][j])){
 					std::cout << "Blew up at step " << k << "in place " << i << "," << j << std::endl;
 					return 1;
