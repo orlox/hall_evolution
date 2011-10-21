@@ -100,7 +100,7 @@ Now, let us consider the case $\alpha=0$. Expressing eq. (\ref{tor::cons}) in te
 \end{eqnarray}
 which after multiplication by $r^2\sin\theta$ gives an equation for which a conservative code can be readily constructed,
 \begin{eqnarray}
-\frac{\pp}{\pp t}\left(\frac{\beta}{\sin\theta}\right)=\frac{\pp}{\pp r}\left(\chi\beta\frac{\pp \beta}{\pp\theta}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{\sin\theta}\frac{\pp\beta}{\pp r}\right)+\frac{\pp}{\pp\theta}\left(-\chi\beta\frac{\pp\beta}{\pp r}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}\right).
+\frac{\pp}{\pp t}\left(\frac{\beta}{\sin\theta}\right)=\frac{\pp}{\pp r}\left(\chi\beta\frac{\pp \beta}{\pp\theta}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{\sin\theta}\frac{\pp\beta}{\pp r}\right)+\frac{\pp}{\pp\theta}\left(-\chi\beta\frac{\pp\beta}{\pp r}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}\right).\label{equbeta}
 \end{eqnarray}
 In order to perform the simulation, I will consider a discretization on a grid with spacing $\Delta r$ in the radial coordinate and $\Delta \theta$ in the angular coordinate, and a timestep $\Delta t$. In this way, I will have $\beta(r,\theta,t)\rightarrow \beta_{i,j}^n$, where the indexes $i,j,n$ represent steps in radius, angle and time. The conservative scheme will then be
 \begin{eqnarray}
@@ -112,16 +112,37 @@ In order to perform the simulation, I will consider a discretization on a grid w
 \begin{eqnarray}
 \begin{aligned}
 \frac{\beta_{i,j}^{n+1}-\beta_{i,j}^{n}}{\Delta t\sin (j\Delta)\theta}=\D\frac{1}{\Delta r}\left[\frac{1}{8\Delta\theta}(\beta_{i+1,j}+\beta_{i,j})(\beta_{i,j+1}+\beta_{i+1,j+1}-\beta_{i,j-1}-\beta_{i+1,j-1})\chi([i+1/2]\Delta r,j\Delta\theta)\right.\\
-\left.-\frac{1}{8\Delta\theta}(\beta_{i,j}+\beta_{i-1,j})(\beta_{i,j+1}+\beta_{i-1,j+1}-\beta_{i,j-1}-\beta_{i-1,j-1})\chi([i+1/2]\Delta r,j\Delta\theta)\right.\\
+\left.-\frac{1}{8\Delta\theta}(\beta_{i,j}+\beta_{i-1,j})(\beta_{i,j+1}+\beta_{i-1,j+1}-\beta_{i,j-1}-\beta_{i-1,j-1})\chi([i-1/2]\Delta r,j\Delta\theta)\right.\\
 +\left.\left(\frac{t_h}{t_d}\right)\frac{1}{\Delta r\sin(j\Delta\theta)}\eta([i+1/2]\Delta r,j\Delta\theta)(\beta_{i+1,j}-\beta_{i,j})\right.\\
 \left.-\left(\frac{t_h}{t_d}\right)\frac{1}{\Delta r\sin(j\Delta\theta)}\eta([i-1/2]\Delta r,j\Delta\theta)(\beta_{i,j}-\beta_{i-1,j})\right]\\
-+\frac{1}{\Delta \theta}\left[\frac{1}{8\Delta r}(\beta_{i,j+1}+\beta_{i,j})(\beta_{i+1,j+1}+\beta_{i+1,j}-\beta_{i-1,j}-\beta_{i-1,j+1})\chi(i\Delta r,[j+1/2]\Delta\theta)\right.\\
-\left.-\frac{1}{8\Delta r}(\beta_{i,j}+\beta_{i,j-1})(\beta_{i+1,j-1}+\beta_{i+1,j}-\beta_{i-1,j}-\beta_{i-1,j-1})\chi(i\Delta r,[j-1/2]\Delta\theta)\right.\\
++\frac{1}{\Delta \theta}\left[-\frac{1}{8\Delta r}(\beta_{i,j+1}+\beta_{i,j})(\beta_{i+1,j+1}+\beta_{i+1,j}-\beta_{i-1,j}-\beta_{i-1,j+1})\chi(i\Delta r,[j+1/2]\Delta\theta)\right.\\
+\left.+\frac{1}{8\Delta r}(\beta_{i,j}+\beta_{i,j-1})(\beta_{i+1,j-1}+\beta_{i+1,j}-\beta_{i-1,j}-\beta_{i-1,j-1})\chi(i\Delta r,[j-1/2]\Delta\theta)\right.\\
 +\left.\left(\frac{t_h}{t_d}\right)\frac{1}{\Delta \theta(i\Delta r)^2}\frac{\eta(i\Delta r,[j+1/2]\Delta\theta)(\beta_{i,j+1}-\beta_{i,j})}{\sin([j+1/2]\Delta\theta)}\right.\\
 \left.-\left(\frac{t_h}{t_d}\right)\frac{1}{\Delta \theta(i\Delta r)^2}\frac{\eta(i\Delta r,[j-1/2]\Delta\theta)(\beta_{i,j}-\beta_{i,j-1})}{\sin([j-1/2]\Delta\theta)}\right].
 \end{aligned}
 \end{eqnarray}
-This scheme is implemented in the code as_toroidal.cpp
+This scheme is implemented in the code as\_toroidal.cpp.
+\section{Toroidal plus poloidal field}
+A purely poloidal field, unless it is in precise equilibrium, will produce a toroidal component. Thus, it is not possible to treat the evolution of a purely poloidal field without including the toroidal component.
+
+The modified form of eq. (\ref{equbeta}), including the effect of the poloidal field, is
+\begin{eqnarray}
+\frac{\pp}{\pp t}\left(\frac{\beta}{\sin\theta}\right)=\frac{\pp}{\pp r}\left(\chi\Delta\alpha\frac{\pp\alpha}{\pp\theta}+\chi\beta\frac{\pp \beta}{\pp\theta}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{\sin\theta}\frac{\pp\beta}{\pp r}\right)+\frac{\pp}{\pp\theta}\left(-\chi\Delta\alpha\frac{\pp\alpha}{\pp\theta}-\chi\beta\frac{\pp\beta}{\pp r}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}\right),
+\end{eqnarray}
+where the evaluation of the term $\Delta\alpha$ at midpoints of the grid is not a trivial affair.
+
+Regarding the equation for $\alpha$, it can be written in a form appropriate to be numerically solved by a backwards "characteristics" method\footnote{I believe this is not the appropriate translation...Is it finite moving element?},
+\begin{eqnarray}
+\frac{\pp\alpha}{\pp t}+\left(-\sin\theta\chi\frac{\pp\beta}{\pp\theta}\right)\frac{\pp \alpha}{\pp r}+\left(\sin\theta\chi\frac{\pp\beta}{\pp r}\right)\frac{\pp \alpha}{\pp \theta}=\eta\Delta\alpha
+\end{eqnarray}
+where $\alpha$ will be advected in the $r-\theta$ grid with a  velocity
+\begin{eqnarray}
+\vec{v}=\left(-\sin\theta\chi\frac{\pp\beta}{\pp \theta},\sin\theta\chi\frac{\pp\beta}{\pp r}\right).
+\end{eqnarray}
+The use of this method will then impose a necessary stability condition, given by (with an abuse of the $<$ operator)
+\begin{eqnarray}
+\vec{v}\Delta t<(\Delta r,\Delta\theta).
+\end{eqnarray}
 \end{document}
 
 
