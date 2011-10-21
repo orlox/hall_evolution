@@ -121,7 +121,7 @@ In order to perform the simulation, I will consider a discretization on a grid w
 \left.-\left(\frac{t_h}{t_d}\right)\frac{1}{\Delta \theta(i\Delta r)^2}\frac{\eta(i\Delta r,[j-1/2]\Delta\theta)(\beta_{i,j}-\beta_{i,j-1})}{\sin([j-1/2]\Delta\theta)}\right].
 \end{aligned}
 \end{eqnarray}
-This scheme is implemented in the code as\_toroidal.cpp.
+This scheme is implemented in the code as\_toroidal.cpp, using as boundary conditions $\beta=0$ in the axis, the inner radius, and the surface.
 \section{Toroidal plus poloidal field}
 A purely poloidal field, unless it is in precise equilibrium, will produce a toroidal component. Thus, it is not possible to treat the evolution of a purely poloidal field without including the toroidal component.
 
