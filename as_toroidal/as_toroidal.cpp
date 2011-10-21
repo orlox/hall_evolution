@@ -43,16 +43,19 @@ chiValue ( double r, double th )
  *  Description:  Gives the initial conditions for B at a given r and theta, the minimun radius is part of the initial condition, so it's included in this block.
  * =====================================================================================
  */
-double rmin=0.5;
+//double rmin=0.5;
+double rmin=0;
 
 	double
 Bi ( double r, double th )
 {
 	//This initial condition represent the fundamental eigenmode of pure ohm
 	//evolution. k and b depend on 
-	double k=6.572013199016351;
-	double b=-2.125069381043848;
-	return ((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
+	//double k=12.72135634741802;
+	//double b=-4.205800731231387;
+	//return ((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
+	double k=4.493328387732195;
+	return ((sin(k*r)/(k*r)-cos(k*r))/(k*r))*sin(th)*r*sin(th);
 }		/* -----  end of function Bi  ----- */
 
 /* 
@@ -86,9 +89,9 @@ main ( int argc, char *argv[] )
 	//######################################################################
 
 	//define size of steps
-	double dr=(1.0-rmin)/rNum;
+	double dr=(1.0-rmin)/(rNum-1);
 	double const Pi=4*atan(1);
-	double dth=Pi/thNum;
+	double dth=Pi/(thNum-1);
 
 	//Create arrays for B, chi, and dchi, and the needed sines and cosines
 	double B[rNum][thNum];
@@ -213,8 +216,10 @@ main ( int argc, char *argv[] )
 			//put messege to std::cout to inform progress
 			std::cout << k << "/" << tNum << std::endl;
 		}
-
-
+		//exit program if timesteps are done
+		if(k==tNum){
+			break;
+		}
 		for(int i=0;i<rNum-1;i++){
 			for(int j=0;j<thNum-1;j++){
 				dBr=0;
