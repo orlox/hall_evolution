@@ -23,5 +23,9 @@ int read_args(int argc, char *argv[]);
 //Functions to check if string is valid int or float
 int is_integer(char *value);
 int is_float(char *value);
+//Creates folder where results will be logged.
+void create_folder();
+//Prints block of text describing simulation to be done.
+void print_header();
 }
 #endif

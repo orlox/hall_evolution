@@ -28,6 +28,8 @@
 
 using namespace std;
 namespace io{
+//std::stringstream used to store the timestamp
+stringstream timeStream;
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  read_args
@@ -110,5 +112,62 @@ is_float ( char *value )
 	}
 	return 1;
 }		/* -----  end of function is_float  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  create_folder
+ *  Description:  Creates folder using as a distinct id the current timestamp. It also creates the file params.dat which stores the simulation parameters
+ * =====================================================================================
+ */
+	void
+create_folder ( )
+{
+	//store timestamp, will be needed also later to access folder
+	timeStream << time(0);
+	//create directory. THIS WONT WORK ON WINDOWS!!
+	string mkdir="mkdir results_"+timeStream.str();
+	system(mkdir.c_str());
+	//create params.dat file, where simulation parameters are logged
+	ofstream params;
+	string filename="results_"+timeStream.str()+"/params.dat";
+	params.open(filename.c_str());
+	params<< "rNum:"<< sim::rNum << std::endl;
+	params<< "thNum:"<< sim::thNum << std::endl;
+	params<< "dt:"<< sim::dt << std::endl;
+	params<< "tNum:"<< sim::tNum << std::endl;
+	params<< "plotSteps:"<< sim::plotSteps << std::endl;
+	params<< "rmin:"<< sim::rmin << std::endl;
+	params<< "thtd:"<< sim::thtd << std::endl;
+	params.close();
+
+	return;
+}		/* -----  end of function create_folder  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  print_header
+ *  Description:  Prints block of text describing the simulation.
+ * =====================================================================================
+ */
+	void
+print_header ( )
+{
+	cout<< endl;
+	cout<< "#################################################"<< endl;
+	cout<< "##########Axisymmetric Hall Evolution############"<< endl;
+	cout<< "#################################################"<< endl;
+	cout<< "PARAMETERS CHOSEN:"<< endl;
+	cout<< "-Number of Radial steps: "<< sim::rNum << endl;
+	cout<< "-Number of Angular steps: "<< sim::thNum << endl;
+	cout<< "-Size of timestep: "<< sim::dt << endl;
+	cout<< "-Number of Time steps: "<< sim::tNum << endl;
+	cout<< "-Save output every "<< sim::plotSteps << " steps" << endl;
+	cout<< "-Minimun radius: "<< sim::rmin << endl;
+	cout<< "-Ratio of hall to dissipative timescales: "<< sim::thtd << endl;
+	cout<< endl;
+	cout<< "Results stored in folder results_" << timeStream.str() << endl;
+	cout<< endl;
+	return;
+}		/* -----  end of function print_header  ----- */
 
 }		/* -----  end of namespace io  ----- */
