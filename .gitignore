@@ -11,4 +11,4 @@ results_*
 # executables to ignore #
 #########################
 
-as_toroidal_run
+*_run
