@@ -110,4 +110,5 @@ is_float ( char *value )
 	}
 	return 1;
 }		/* -----  end of function is_float  ----- */
+
 }		/* -----  end of namespace io  ----- */

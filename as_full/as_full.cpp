@@ -16,8 +16,8 @@
  * =====================================================================================
  */
 
-#include	<stdlib.h>
 #include	"io.h"
+#include	"sim.h"
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -28,6 +28,15 @@
 	int
 main ( int argc, char *argv[] )
 {
-	io::read_args(argc, argv);
-	return EXIT_SUCCESS;
+	//Read arguments from cli. If it fails, exit with error code 1!
+	if(io::read_args(argc, argv))
+		return 1;
+	//set up the initial conditions
+	sim::initial_conditions();
+	//solve many values which are repeated at each point of the grid at all timesteps
+	sim::solve_repeated_values();
+	//perform the simulation. If it fails, exit with error code 2!
+	if(sim::simulate())
+		return 2;
+	return 0;
 }				/* ----------  end of function main  ---------- */

@@ -19,11 +19,33 @@
 #define SIM_H
 namespace sim{
 //values given as cli arguments.
-int rNum;
-int thNum;
-double dt;
-int tNum;
-int plotSteps;
-int thtd;
+extern int rNum;
+extern int thNum;
+extern double dt;
+extern int tNum;
+extern int plotSteps;
+extern int thtd;
+//physical values of functions defining the magnetic field.
+extern double **B;
+extern double **A;
+//physical values that describe the structure of the star.
+extern double **chi;
+extern double **eta;
+//arrays that contains the precalculated quantities neccesary to solve fluxes for B
+extern double **hall_rflux;
+extern double **hall_thflux;
+extern double **res_rflux;
+extern double **res_thflux;
+//minimun radius of the shell containing the magnetic field.
+extern double rmin;
+//size of spatial steps.
+extern double dr;
+extern double dth;
+//function to set initial conditions
+void initial_conditions();
+//function that solves values that remain the same through all the simulation
+void solve_repeated_values();
+//function that performs the simulation
+int simulate();
 }
 #endif
