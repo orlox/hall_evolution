@@ -15,6 +15,7 @@
  *
  * =====================================================================================
  */
+#include <iostream>
 #include "math.h"
 #include "sim.h"
 #include "io.h"
@@ -38,6 +39,8 @@ double **hall_rflux;
 double **hall_thflux;
 double **res_rflux;
 double **res_thflux;
+//sines precalculated at each point in the grid
+double *sines;
 //minimun radius of the shell containing the magnetic field.
 double rmin;
 //size of spatial steps.
@@ -62,6 +65,7 @@ initial_conditions ( )
 	hall_thflux=new double*[rNum];
 	res_rflux=new double*[rNum];
 	res_thflux=new double*[rNum];
+	sines=new double[thNum];
 	for(int i=0;i<rNum;i++){
 		A[i]=new double[thNum];
 		B[i]=new double[thNum];
@@ -118,15 +122,19 @@ solve_repeated_values ( )
 {
 	//Solve common terms involved in the calculation of the toroidal field.
 	double r,th;
-	for(int i=1;i<rNum-1;i++){
+	for(int i=0;i<rNum-1;i++){
 		r=rmin+i*dr;
-		for(int j=0;j<rNum;j++){
+		for(int j=0;j<rNum-1;j++){
 			th=j*dth;
 			hall_rflux[i][j] = dt*initial::chi(r+dr/2,th)/8.0/dr/dth;
 			hall_thflux[i][j]=-dt*initial::chi(r,th+dth/2)/8.0/dr/dth;
 			res_rflux[i][j]  = dt*thtd*initial::eta(r+dr/2,th)/sin(th)/dr/dr;
 			res_thflux[i][j] = dt*thtd*initial::eta(r,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
 		}
+	}
+	for(int j=1;j<thNum-1;j++){
+		th=j*dth;
+		sines[j]=sin(th);
 	}
 	return;
 }		/* -----  end of function solve_repeated_values  ----- */
@@ -140,7 +148,96 @@ solve_repeated_values ( )
 	int
 simulate ( )
 {
+	//Create file where integrated quantities are logged
+	io::create_integrals_file();
+
+	//Begin simulation
+	double t;
+	//double Aaux[rNum][thNum];
+	double Baux[rNum][thNum];
+	for(int k=0;k<=tNum;k++){
+		//log data if k is multiple of plotSteps
+		if(k%plotSteps==0){
+			t=k*dt;
+			//log integrated quantities
+			io::log_integrals_file(t,solve_integrals());
+			//log complete profiles for A and B
+			io::log_field(k);
+			//No need to keep simulating if no output will be produced in next steps
+			if(k+plotSteps>tNum){
+				break;
+			}
+		}
+
+		//Update toroidal field function
+		for(int i=0;i<rNum-1;i++){
+			for(int j=0;j<thNum-1;j++){
+				if(i==0&&j==0)
+					continue;
+				double dBr=0;
+				double dBth=0;
+				if(j!=0){
+					dBr+=hall_rflux[i][j]
+						*(B[i+1][j]+B[i][j])
+						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+					dBr+=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
+				}
+				if(i!=0){
+					dBth+=hall_thflux[i][j]
+						*(B[i][j+1]+B[i][j])
+						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+					dBth+=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
+				}
+
+				Baux[i][j]+=(dBr+dBth)*sines[j];
+				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
+				Baux[i][j+1]-=dBth*sines[j+1];
+			}
+		}
+		for(int i=1;i<rNum-1;i++){
+			for(int j=1;j<thNum-1;j++){
+				//check for blowups, exit program if that happens
+				if(isinf(Baux[i][j])){
+					io::report_blowup(k,i,j);
+					return 1;
+				}
+				B[i][j]=Baux[i][j];
+			}
+		}
+	}
+
+	//Close file where integrated quantities are logged
+	io::close_integrals_file();
 	return 0;
 }		/* -----  end of function simulate  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  solve_integrals
+ *  Description:  Solves integrated quantities in the star:
+ *  - Toroidal flux
+ *  - Toroidal field energy
+ *  These are returned in an array in that order.
+ * =====================================================================================
+ */
+	double*
+solve_integrals ( )
+{
+	double *integrals=new double[2];
+	integrals[0]=integrals[1]=0;
+	double r;
+	for(int i=1;i<rNum-1;i++){
+		r=i*dr+rmin;
+		for(int j=1;j<thNum-1;j++){
+			//Toroidal flux
+			integrals[0]+=B[i][j]/sines[j];
+			//Toroidal energy
+			integrals[1]+=pow(B[i][j],2)/r;
+		}
+	}
+	integrals[0]=integrals[0]*dr*dth;
+	integrals[1]=integrals[1]*dr*dth;
+	return integrals;
+}		/* -----  end of function solve_integrals  ----- */
 
 }		/* -----  end of namespace sim  ----- */

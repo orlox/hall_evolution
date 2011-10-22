@@ -27,5 +27,15 @@ int is_float(char *value);
 void create_folder();
 //Prints block of text describing simulation to be done.
 void print_header();
+//Create file where integrated quantities are logged
+void create_integrals_file();
+//Prints a line in file with integrated quantities
+void log_integrals_file(double t, double*B);
+//Close file where integrated quantities are logged
+void close_integrals_file();
+//Creates two files for the complete profiles of alpha and beta
+void log_field(int k);
+//Prints info relating to a blowup
+void report_blowup(int k,int i,int j);
 }
 #endif

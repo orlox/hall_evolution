@@ -30,6 +30,9 @@ using namespace std;
 namespace io{
 //std::stringstream used to store the timestamp
 stringstream timeStream;
+//std::ofstream which points to the file where integrated quantities are stored
+ofstream integrals_file;
+
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  read_args
@@ -167,7 +170,97 @@ print_header ( )
 	cout<< endl;
 	cout<< "Results stored in folder results_" << timeStream.str() << endl;
 	cout<< endl;
+	cout<< "Beggining simulation" << timeStream.str() << endl;
 	return;
 }		/* -----  end of function print_header  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  create_integrals_file
+ *  Description:  Crease file integrals.dat where integrated quantities are logged
+ * =====================================================================================
+ */
+	void
+create_integrals_file ( )
+{
+	string filename="results_"+timeStream.str()+"/integrals.dat";
+	integrals_file.open(filename.c_str());
+	integrals_file << "#t F_t E_T" << endl;
+	return;
+}		/* -----  end of function create_integrals_file  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  log_integrals_file
+ *  Description:  Adds a line to the integrals file
+ * =====================================================================================
+ */
+	void
+log_integrals_file ( double t, double *integrals )
+{
+	integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
+	return;
+}		/* -----  end of function log_integrals_file  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  close_integrals_file
+ *  Description:  
+ * =====================================================================================
+ */
+	void
+close_integrals_file ( )
+{
+	integrals_file.close();
+	return;
+}		/* -----  end of function close_integrals_file  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  log_field
+ *  Description:  Creates log files for the functions alpha and beta at timestep k.
+ * =====================================================================================
+ */
+	void
+log_field ( int k )
+{
+	//construct filename for alpha log file, and open it
+	stringstream AStream;
+	AStream << "results_" << timeStream.str() << "/A_" << k;
+	string filenameA=AStream.str();
+	ofstream resultsA;
+	resultsA.open(filenameA.c_str());
+	//construct filename for alpha log file, and open it
+	stringstream BStream;
+	BStream << "results_" << timeStream.str() << "/B_" << k;
+	string filenameB=BStream.str();
+	ofstream resultsB;
+	resultsB.open(filenameB.c_str());
+	//Log values
+	for(int i=0;i<sim::rNum;i++){
+		for(int j=0;j<sim::thNum;j++){
+			resultsA << sim::A[i][j] << " ";
+			resultsB << sim::B[i][j] << " ";
+		}
+	}
+	//close files
+	resultsA.close();
+	resultsB.close();
+
+	return;
+}		/* -----  end of function log_field  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  report_blowup
+ *  Description:  Reports information related to a blowup. The arguments received are the timestep number "k", the radial step number "i" and the angular step number "j" where the abnormality ocurred.
+ * =====================================================================================
+ */
+	void
+report_blowup ( int k, int i, int j )
+{
+	cerr << "Blew up at step " << k << "in place " << i << "," << j << endl; 
+	return;
+}		/* -----  end of function report_blowup  ----- */
 
 }		/* -----  end of namespace io  ----- */

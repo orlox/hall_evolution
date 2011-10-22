@@ -36,6 +36,8 @@ extern double **hall_rflux;
 extern double **hall_thflux;
 extern double **res_rflux;
 extern double **res_thflux;
+//sines precalculated at each point in the grid
+extern double *sines;
 //minimun radius of the shell containing the magnetic field.
 extern double rmin;
 //size of spatial steps.
@@ -47,5 +49,7 @@ void initial_conditions();
 void solve_repeated_values();
 //function that performs the simulation
 int simulate();
+//function that solves integrated quantities
+double* solve_integrals();
 }
 #endif
