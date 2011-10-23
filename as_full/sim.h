@@ -24,7 +24,7 @@ extern int thNum;
 extern double dt;
 extern int tNum;
 extern int plotSteps;
-extern int thtd;
+extern double thtd;
 //physical values of functions defining the magnetic field.
 extern double **B;
 extern double **A;

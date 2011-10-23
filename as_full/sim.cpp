@@ -27,7 +27,7 @@ int thNum;
 double dt;
 int tNum;
 int plotSteps;
-int thtd;
+double thtd;
 //physical values of functions defining the magnetic field.
 double **B;
 double **A;
@@ -89,7 +89,7 @@ initial_conditions ( )
 	double r,th;
 	for(int i=1;i<rNum-1;i++){
 		r=rmin+i*dr;
-		for(int j=1;j<rNum-1;j++){
+		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
 			A[i][j]=initial::A(r,th);
 			B[i][j]=initial::B(r,th);
@@ -124,7 +124,7 @@ solve_repeated_values ( )
 	double r,th;
 	for(int i=0;i<rNum-1;i++){
 		r=rmin+i*dr;
-		for(int j=0;j<rNum-1;j++){
+		for(int j=0;j<thNum-1;j++){
 			th=j*dth;
 			hall_rflux[i][j] = dt*initial::chi(r+dr/2,th)/8.0/dr/dth;
 			hall_thflux[i][j]=-dt*initial::chi(r,th+dth/2)/8.0/dr/dth;
@@ -167,6 +167,7 @@ simulate ( )
 			if(k+plotSteps>tNum){
 				break;
 			}
+			std::cout << k << "/" << tNum << std::endl;
 		}
 
 		//Update toroidal field function

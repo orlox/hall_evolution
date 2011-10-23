@@ -170,7 +170,7 @@ print_header ( )
 	cout<< endl;
 	cout<< "Results stored in folder results_" << timeStream.str() << endl;
 	cout<< endl;
-	cout<< "Beggining simulation" << timeStream.str() << endl;
+	cout<< "Beggining simulation" << endl;
 	return;
 }		/* -----  end of function print_header  ----- */
 
@@ -242,6 +242,8 @@ log_field ( int k )
 			resultsA << sim::A[i][j] << " ";
 			resultsB << sim::B[i][j] << " ";
 		}
+		resultsA << endl;
+		resultsB << endl;
 	}
 	//close files
 	resultsA.close();
