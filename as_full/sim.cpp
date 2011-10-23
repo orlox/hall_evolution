@@ -104,8 +104,8 @@ initial_conditions ( )
 		B[i][0]=A[i][thNum-1]=0;
 	}
 	for(int j=0;j<thNum;j++){
-		A[0][j]=A[rNum-1][thNum-1]=0;
-		B[0][j]=A[rNum-1][thNum-1]=0;
+		A[0][j]=A[rNum-1][j]=0;
+		B[0][j]=A[rNum-1][j]=0;
 	}
 	
 	return;
@@ -153,8 +153,9 @@ simulate ( )
 
 	//Begin simulation
 	double t;
-	//double Aaux[rNum][thNum];
+	double Aaux[rNum][thNum];
 	double Baux[rNum][thNum];
+	double gsA[rNum][thNum];
 	for(int k=0;k<=tNum;k++){
 		//log data if k is multiple of plotSteps
 		if(k%plotSteps==0){
@@ -169,10 +170,20 @@ simulate ( )
 			}
 			std::cout << k << "/" << tNum << std::endl;
 		}
+		//Solve grad shafranov operator acting on A on all grid (except boundaries)
+		for(int i=1;i<rNum-1;i++){
+			double r=rmin+i*dr;
+			for(int j=1;j<thNum-1;j++){
+				double th=j*dth;
+				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cos(th)/sin(th)*(A[i][j+1]-A[i][j-1])/2/dth;
+			}
+		}
 
 		//Update toroidal field function
 		for(int i=0;i<rNum-1;i++){
+			double r=rmin+i*dr;
 			for(int j=0;j<thNum-1;j++){
+				double th=j*dth;
 				if(i==0&&j==0)
 					continue;
 				double dBr=0;
@@ -182,27 +193,86 @@ simulate ( )
 						*(B[i+1][j]+B[i][j])
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
 					dBr+=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
+					if(i!=0){
+						dBr+=dt*initial::chi(r+dr/2,th)
+							*(gsA[i][j]+gsA[i+1][j])
+							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
+							/8/dr/dth;
+					}else{
+						dBr+=dt*initial::chi(r+dr/2,th)
+							*(3*gsA[i][j]-gsA[i+1][j])
+							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
+							/8/dr/dth;
+					}
 				}
 				if(i!=0){
 					dBth+=hall_thflux[i][j]
 						*(B[i][j+1]+B[i][j])
 						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
 					dBth+=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
+					if(j!=0){
+						dBth+=-dt*initial::chi(r,th+dth/2)
+							*(gsA[i][j]+gsA[i][j+1])
+							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])
+							/8/dr/dth;
+					}else{
+						dBth+=-dt*initial::chi(r,th+dth/2)
+							*(3*gsA[i][j]-gsA[i][j+1])
+							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])
+							/8/dr/dth;
+					}
 				}
-
 				Baux[i][j]+=(dBr+dBth)*sines[j];
 				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
 				Baux[i][j+1]-=dBth*sines[j+1];
 			}
 		}
+		//update poloidal field function
+		for(int i=1;i<rNum-1;i++){
+			for(int j=1;j<thNum-1;j++){
+				//solve new point
+				double r=rmin+i*dr+dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth;
+				double th=j*dth-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr;
+				//solve 4 point grid to interpolate (or perhaps extrapolate)
+				int imoved=r/dr;
+				int jmoved=th/dth;
+				if(imoved==0){
+					imoved=1;
+				}
+				if(jmoved==0){
+					jmoved=1;
+				}
+				if(imoved==rNum-2){
+					imoved=rNum-3;
+				}
+				if(jmoved==thNum-2){
+					jmoved=thNum-3;
+				}
+				r-=(rmin+imoved*dr);
+				th-=(jmoved*dth);
+				//using the four points, approximate the grad-shafranov of alpha
+				double a=(gsA[imoved+1][jmoved]-gsA[imoved][jmoved])/dr;
+				double b=(gsA[imoved][jmoved+1]-gsA[imoved][jmoved])/dth;
+				double c=(gsA[imoved][jmoved]+gsA[imoved+1][jmoved+1]
+						-gsA[imoved+1][jmoved]-gsA[imoved][jmoved+1])/dr/dth;
+
+				double a2=(A[imoved+1][jmoved]-A[imoved][jmoved])/dr;
+				double b2=(A[imoved][jmoved+1]-A[imoved][jmoved])/dth;
+				double c2=(A[imoved][jmoved]+A[imoved+1][jmoved+1]
+						-A[imoved+1][jmoved]-A[imoved][jmoved+1])/dr/dth;
+				Aaux[i][j]=(A[imoved][jmoved]+a2*r+b2*th+c2*r*th)
+					+dt*thtd*eta[i][j]*(gsA[imoved][jmoved]+a*r+b*th+c*r*th);
+			}
+		}
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
 				//check for blowups, exit program if that happens
-				if(isinf(Baux[i][j])){
+				if(isinf(Baux[i][j])||isinf(Aaux[i][j])){
 					io::report_blowup(k,i,j);
 					return 1;
 				}
 				B[i][j]=Baux[i][j];
+				A[i][j]=Aaux[i][j];
 			}
 		}
 	}

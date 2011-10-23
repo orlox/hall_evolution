@@ -33,7 +33,8 @@ params.close()
 dr=(1.0-rmin)/rNum
 dth=math.pi/thNum
 
-#Create array to store B at each step
+#Create array to store A and B at each step
+A=zeros((rNum,thNum));
 B=zeros((rNum,thNum));
 
 # make this smaller to increase the resolution
@@ -42,7 +43,8 @@ dx=0.005
 x = arange(0, 1, dx)
 y = arange(-1, 1, dx)
 X,Y = meshgrid(x, y)
-Z=zeros((len(x),len(y)))
+ZA=zeros((len(x),len(y)))
+ZB=zeros((len(x),len(y)))
 
 #get place in B grid that corresponds to each place in Z grid
 grid=zeros((len(x),len(y),2))
@@ -66,8 +68,24 @@ for xvalue in x :
 
 k=0
 while 1:
-    #read first file
+    #read A file
     data
+    try:
+        data=open(folder+"A_"+str(k),'r')
+    except IOError as e:
+        break
+    i,j=0,0
+    for line in data:
+        values=line.split(" ")
+        for value in values:
+            if j==thNum:
+                break
+            A[i][j]=float(value)
+            j+=1
+        j=0
+        i+=1
+    data.close()
+    #read B file
     try:
         data=open(folder+"B_"+str(k),'r')
     except IOError as e:
@@ -87,10 +105,12 @@ while 1:
     i,j=0,0
     for xvalue in x :
         for yvalue in y:
-            Z[i][j]=B[grid[i][j][0]][grid[i][j][1]]
+            ZA[i][j]=A[grid[i][j][0]][grid[i][j][1]]
+            ZB[i][j]=B[grid[i][j][0]][grid[i][j][1]]
             j+=1
         j=0
         i+=1
+
     #add data
     figtext(0.1, 0.8, "Radial steps: "+str(rNum))
     figtext(0.1, 0.7, "Angular steps: "+str(thNum))
@@ -98,7 +118,7 @@ while 1:
     figtext(0.1, 0.5, "t_h/t_d: "+str(thtd))
     figtext(0.1, 0.4, "t: "+str(k*dt))
     #create plot
-    imshow(Z.T,extent=[0,1,-1,1],origin="lower")
+    imshow(ZA.T,extent=[0,1,-1,1],origin="lower")
     colorbar()
     #add zeros to the number of the plot, so they are ordered appropately
     num_file=str(k)
@@ -109,7 +129,30 @@ while 1:
     print num_file
 
     #save to file
-    savefig(folder+"plot_"+num_file+".png", dpi=None, facecolor='w', edgecolor='w',
+    savefig(folder+"plotA_"+num_file+".png", dpi=None, facecolor='w', edgecolor='w',
+                orientation='portrait', papertype=None, format=None,
+                transparent=False, bbox_inches=None, pad_inches=0.1)
+    close()
+
+    #add data
+    figtext(0.1, 0.8, "Radial steps: "+str(rNum))
+    figtext(0.1, 0.7, "Angular steps: "+str(thNum))
+    figtext(0.1, 0.6, "Time step: "+str(dt))
+    figtext(0.1, 0.5, "t_h/t_d: "+str(thtd))
+    figtext(0.1, 0.4, "t: "+str(k*dt))
+    #create plot
+    imshow(ZB.T,extent=[0,1,-1,1],origin="lower")
+    colorbar()
+    #add zeros to the number of the plot, so they are ordered appropately
+    num_file=str(k)
+    diff_zeros=len(str(tNum))-len(str(k))
+    while diff_zeros>0:
+        num_file="0"+num_file
+        diff_zeros-=1
+    print num_file
+
+    #save to file
+    savefig(folder+"plotB_"+num_file+".png", dpi=None, facecolor='w', edgecolor='w',
                 orientation='portrait', papertype=None, format=None,
                 transparent=False, bbox_inches=None, pad_inches=0.1)
     close()

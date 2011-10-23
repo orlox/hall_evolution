@@ -21,7 +21,7 @@
 #include <math.h>
 namespace initial{
 	//minimun radius of the shell containing the magnetic field
-	double rmin=0.5;
+	double rmin=0;
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -34,7 +34,7 @@ namespace initial{
 	double
 A ( double r, double th )
 {
-	return 0;
+	return pow(sin(th),2)*(9.0/5.0*pow(r,2)-14.0/5.0*pow(r,4)+pow(r,6));
 }		/* -----  end of function Ai  ----- */
 
 /* 
@@ -50,7 +50,8 @@ double b=-2.125069381043848;
 	double
 B ( double r, double th )
 {
-	return ((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
+	return 0;
+	//return ((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 
