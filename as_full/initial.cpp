@@ -53,8 +53,8 @@ double b=-2.125069381043848;
 	double
 B ( double r, double th )
 {
-	return 0;
-	//return ((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
+	//return 0;
+	return 5*((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 

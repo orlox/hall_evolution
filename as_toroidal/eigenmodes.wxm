@@ -2,7 +2,7 @@
 /* [ Created with wxMaxima version 0.8.7 ] */
 
 /* [wxMaxima: input   start ] */
-spherical_bessel_j(2,k*x)+b*spherical_bessel_y(2,k*x);
+spherical_bessel_j(2,k*r)+b*spherical_bessel_y(2,k*r);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
@@ -10,11 +10,11 @@ spherical_bessel_j(2,k*x)+b*spherical_bessel_y(2,k*x);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-wxplot2d([spherical_bessel_j(1,0.2*k)*spherical_bessel_y(1,k)-spherical_bessel_j(1,k)*spherical_bessel_y(1,0.2*k)], [k,2,8])$
+wxplot2d([spherical_bessel_j(1,0.5*k)*spherical_bessel_y(1,k)-spherical_bessel_j(1,k)*spherical_bessel_y(1,0.5*k)], [k,3,18])$
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-find_root(spherical_bessel_j(1,0.2*k)*spherical_bessel_y(1,k)-spherical_bessel_j(1,k)*spherical_bessel_y(1,0.2*k),k,4,5);
+find_root(spherical_bessel_j(1,0.5*k)*spherical_bessel_y(1,k)-spherical_bessel_j(1,k)*spherical_bessel_y(1,0.5*k),k,4,8);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
@@ -22,7 +22,7 @@ kk:%;
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-1/kk**2/2;
+1/kk**2;
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
@@ -39,6 +39,46 @@ spherical_bessel_j(1,k*r)+b*spherical_bessel_y(1,k*r);
 
 /* [wxMaxima: input   start ] */
 1/kk**2;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+sqrt(20.19);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+1/%**2;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+%*200;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+-21*4*3+15*3*5+42-15;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+f(x):=a+b*x**2+c*x**4+d*x**5+e*x**6;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+diff(f(x),x,2)-2*f(x)/x**2;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+g(x):=-(2*(e*x^6+d*x^5+c*x^4+b*x^2+a))/x^2+30*e*x^4+20*d*x^3+12*c*x^2+2*b;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+solve([g(1)=0,f(1)=0, f(0.5)=0,g(0.5)=0],[a,b,c,d]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+f(r,th):=A1+a*r+b*th+c*r*th;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+solve([f(dr,0)=A2,f(0,dth)=A3,f(dr,dth)=A4],[a,b,c]);
 /* [wxMaxima: input   end   ] */
 
 /* Maxima can't load/batch files which end with a comment! */

@@ -288,6 +288,7 @@ simulate ( )
  *  Description:  Solves integrated quantities in the star:
  *  - Toroidal flux
  *  - Toroidal field energy
+ *  - Poloidal field energy
  *  These are returned in an array in that order.
  * =====================================================================================
  */
