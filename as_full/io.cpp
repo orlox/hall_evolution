@@ -185,7 +185,7 @@ create_integrals_file ( )
 {
 	string filename="results_"+timeStream.str()+"/integrals.dat";
 	integrals_file.open(filename.c_str());
-	integrals_file << "#t F_t E_T" << endl;
+	integrals_file << "#t F_t E_T E_P" << endl;
 	return;
 }		/* -----  end of function create_integrals_file  ----- */
 
@@ -198,7 +198,7 @@ create_integrals_file ( )
 	void
 log_integrals_file ( double t, double *integrals )
 {
-	integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
+	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << endl;
 	return;
 }		/* -----  end of function log_integrals_file  ----- */
 

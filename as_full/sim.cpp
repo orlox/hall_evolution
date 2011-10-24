@@ -294,8 +294,8 @@ simulate ( )
 	double*
 solve_integrals ( )
 {
-	double *integrals=new double[2];
-	integrals[0]=integrals[1]=0;
+	double *integrals=new double[3];
+	integrals[0]=integrals[1]=integrals[2]=0;
 	double r;
 	for(int i=1;i<rNum-1;i++){
 		r=i*dr+rmin;
@@ -304,10 +304,13 @@ solve_integrals ( )
 			integrals[0]+=B[i][j]/sines[j];
 			//Toroidal energy
 			integrals[1]+=pow(B[i][j],2)/r;
+			//Poloidal energy
+			integrals[2]+=pow((A[i+1][j]-A[i-1][j])/2/dr,2)/sines[j]+pow((A[i][j+1]-A[i][j-1])/2/dth,2)/r/r/sines[j];
 		}
 	}
 	integrals[0]=integrals[0]*dr*dth;
 	integrals[1]=integrals[1]*dr*dth;
+	integrals[2]=integrals[2]*dr*dth;
 	return integrals;
 }		/* -----  end of function solve_integrals  ----- */
 
