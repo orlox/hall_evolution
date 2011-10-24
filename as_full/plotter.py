@@ -2,8 +2,7 @@
 """
 Program to produce graphs from the output of the as_toroidal program
 """
-from __future__ import division
-from matplotlib.patches import Patch
+import matplotlib.pyplot as plt
 from pylab import *
 import sys
 import math
@@ -110,16 +109,22 @@ while 1:
             j+=1
         j=0
         i+=1
-
+    fig=plt.figure()
     #add data
-    figtext(0.1, 0.8, "Radial steps: "+str(rNum))
-    figtext(0.1, 0.7, "Angular steps: "+str(thNum))
-    figtext(0.1, 0.6, "Time step: "+str(dt))
-    figtext(0.1, 0.5, "t_h/t_d: "+str(thtd))
-    figtext(0.1, 0.4, "t: "+str(k*dt))
+    figtext(0.05, 0.95, "Radial steps: "+str(rNum))
+    figtext(0.3, 0.95, "Angular steps: "+str(thNum))
+    figtext(0.55, 0.95, "Time step: "+str(dt))
+    figtext(0.75, 0.95, "t_h/t_d: "+str(thtd))
+    figtext(0.92, 0.95, "t: "+str(k*dt))
     #create plot
-    imshow(ZA.T,extent=[0,1,-1,1],origin="lower")
-    colorbar()
+    a=fig.add_subplot(1,2,1)
+    plt.imshow(ZA.T,extent=[0,1,-1,1],origin="lower")
+    plt.colorbar()
+    a.set_title("alpha")
+    a=fig.add_subplot(1,2,2)
+    plt.imshow(ZB.T,extent=[0,1,-1,1],origin="lower")
+    plt.colorbar()
+    a.set_title("beta")
     #add zeros to the number of the plot, so they are ordered appropately
     num_file=str(k)
     diff_zeros=len(str(tNum))-len(str(k))
@@ -129,33 +134,11 @@ while 1:
     print num_file
 
     #save to file
-    savefig(folder+"plotA_"+num_file+".png", dpi=None, facecolor='w', edgecolor='w',
+    savefig(folder+"plot_"+num_file+".png", dpi=None, facecolor='w', edgecolor='w',
                 orientation='portrait', papertype=None, format=None,
                 transparent=False, bbox_inches=None, pad_inches=0.1)
     close()
 
-    #add data
-    figtext(0.1, 0.8, "Radial steps: "+str(rNum))
-    figtext(0.1, 0.7, "Angular steps: "+str(thNum))
-    figtext(0.1, 0.6, "Time step: "+str(dt))
-    figtext(0.1, 0.5, "t_h/t_d: "+str(thtd))
-    figtext(0.1, 0.4, "t: "+str(k*dt))
-    #create plot
-    imshow(ZB.T,extent=[0,1,-1,1],origin="lower")
-    colorbar()
-    #add zeros to the number of the plot, so they are ordered appropately
-    num_file=str(k)
-    diff_zeros=len(str(tNum))-len(str(k))
-    while diff_zeros>0:
-        num_file="0"+num_file
-        diff_zeros-=1
-    print num_file
-
-    #save to file
-    savefig(folder+"plotB_"+num_file+".png", dpi=None, facecolor='w', edgecolor='w',
-                orientation='portrait', papertype=None, format=None,
-                transparent=False, bbox_inches=None, pad_inches=0.1)
-    close()
     k+=plotSteps
 
 sys.exit()
