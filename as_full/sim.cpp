@@ -200,7 +200,7 @@ simulate ( )
 							/8/dr/dth;
 					}else{
 						dBr+=dt*initial::chi(r+dr/2,th)
-							*(3*gsA[i][j]-gsA[i+1][j])
+							*(3*gsA[i+1][j]-gsA[i+2][j])
 							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
 							/8/dr/dth;
 					}
@@ -217,7 +217,7 @@ simulate ( )
 							/8/dr/dth;
 					}else{
 						dBth+=-dt*initial::chi(r,th+dth/2)
-							*(3*gsA[i][j]-gsA[i][j+1])
+							*(3*gsA[i][j+1]-gsA[i][j+2])
 							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])
 							/8/dr/dth;
 					}
@@ -234,7 +234,7 @@ simulate ( )
 				double r=rmin+i*dr+dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth;
 				double th=j*dth-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr;
 				//solve 4 point grid to interpolate (or perhaps extrapolate)
-				int imoved=r/dr;
+				int imoved=(r-rmin)/dr;
 				int jmoved=th/dth;
 				if(imoved==0){
 					imoved=1;
