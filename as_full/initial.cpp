@@ -31,6 +31,7 @@ namespace initial{
  *  BOUNDARY CONDITIONS!!: A should be 1 in the axis of symmetry, and it should be such that the magnetic field is completely continuous along the surface of the star (i.e. no surface currents).
  * =====================================================================================
  */
+#ifndef TOROIDAL
 	double
 A ( double r, double th )
 {
@@ -39,6 +40,7 @@ A ( double r, double th )
 	//test for rmin=0.5
 	return pow(sin(th),2)*(-13.0/304.0+15.0/152.0*pow(r,2)+345.0/304.0*pow(r,4)-333.0/152*pow(r,5)+pow(r,6));
 }		/* -----  end of function Ai  ----- */
+#endif
 
 /* 
  * ===  FUNCTION  ======================================================================

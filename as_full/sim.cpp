@@ -16,6 +16,7 @@
  * =====================================================================================
  */
 #include <iostream>
+#include <stdlib.h>
 #include "math.h"
 #include "sim.h"
 #include "io.h"
@@ -30,7 +31,9 @@ int plotSteps;
 double thtd;
 //physical values of functions defining the magnetic field.
 double **B;
+#ifndef TOROIDAL
 double **A;
+#endif
 //physical values that describe the structure of the star.
 double **chi;
 double **eta;
@@ -57,7 +60,9 @@ double dth;
 initial_conditions ( )
 {
 	//Initialize arrays with appropiate sizes
+#ifndef TOROIDAL
 	A=new double*[rNum];
+#endif
 	B=new double*[rNum];
 	chi=new double*[rNum];
 	eta=new double*[rNum];
@@ -67,7 +72,9 @@ initial_conditions ( )
 	res_thflux=new double*[rNum];
 	sines=new double[thNum];
 	for(int i=0;i<rNum;i++){
+#ifndef TOROIDAL
 		A[i]=new double[thNum];
+#endif
 		B[i]=new double[thNum];
 		chi[i]=new double[thNum];
 		eta[i]=new double[thNum];
@@ -91,7 +98,9 @@ initial_conditions ( )
 		r=rmin+i*dr;
 		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
+#ifndef TOROIDAL
 			A[i][j]=initial::A(r,th);
+#endif
 			B[i][j]=initial::B(r,th);
 			chi[i][j]=initial::chi(r,th);
 			eta[i][j]=initial::eta(r,th);
@@ -100,12 +109,16 @@ initial_conditions ( )
 
 	//set boundary conditions
 	for(int i=0;i<rNum;i++){
+#ifndef TOROIDAL
 		A[i][0]=A[i][thNum-1]=0;
-		B[i][0]=A[i][thNum-1]=0;
+#endif
+		B[i][0]=B[i][thNum-1]=0;
 	}
 	for(int j=0;j<thNum;j++){
+#ifndef TOROIDAL
 		A[0][j]=A[rNum-1][j]=0;
-		B[0][j]=A[rNum-1][j]=0;
+#endif
+		B[0][j]=B[rNum-1][j]=0;
 	}
 	
 	return;
@@ -153,9 +166,11 @@ simulate ( )
 
 	//Begin simulation
 	double t;
+#ifndef TOROIDAL
 	double Aaux[rNum][thNum];
-	double Baux[rNum][thNum];
 	double gsA[rNum][thNum];
+#endif
+	double Baux[rNum][thNum];
 	for(int k=0;k<=tNum;k++){
 		//log data if k is multiple of plotSteps
 		if(k%plotSteps==0){
@@ -170,6 +185,7 @@ simulate ( )
 			}
 			std::cout << k << "/" << tNum << std::endl;
 		}
+#ifndef TOROIDAL
 		//Solve grad shafranov operator acting on A on all grid (except boundaries)
 		for(int i=1;i<rNum-1;i++){
 			double r=rmin+i*dr;
@@ -179,60 +195,21 @@ simulate ( )
 			}
 		}
 
-		//Update toroidal field function
-		for(int i=0;i<rNum-1;i++){
-			double r=rmin+i*dr;
-			for(int j=0;j<thNum-1;j++){
-				double th=j*dth;
-				if(i==0&&j==0)
-					continue;
-				double dBr=0;
-				double dBth=0;
-				if(j!=0){
-					dBr+=hall_rflux[i][j]
-						*(B[i+1][j]+B[i][j])
-						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
-					dBr+=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
-					if(i!=0){
-						dBr+=dt*initial::chi(r+dr/2,th)
-							*(gsA[i][j]+gsA[i+1][j])
-							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
-							/8/dr/dth;
-					}else{
-						dBr+=dt*initial::chi(r+dr/2,th)
-							*(3*gsA[i+1][j]-gsA[i+2][j])
-							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
-							/8/dr/dth;
-					}
-				}
-				if(i!=0){
-					dBth+=hall_thflux[i][j]
-						*(B[i][j+1]+B[i][j])
-						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
-					dBth+=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
-					if(j!=0){
-						dBth+=-dt*initial::chi(r,th+dth/2)
-							*(gsA[i][j]+gsA[i][j+1])
-							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])
-							/8/dr/dth;
-					}else{
-						dBth+=-dt*initial::chi(r,th+dth/2)
-							*(3*gsA[i][j+1]-gsA[i][j+2])
-							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])
-							/8/dr/dth;
-					}
-				}
-				Baux[i][j]+=(dBr+dBth)*sines[j];
-				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
-				Baux[i][j+1]-=dBth*sines[j+1];
-			}
-		}
 		//update poloidal field function
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
-				//solve new point
-				double r=rmin+i*dr+dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth;
-				double th=j*dth-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr;
+				//cut timestep by half if displacement is too large
+				double dispr=dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth;
+				double dispth=-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr;
+//				if(fabs(dispr)>dr/100||fabs(dispth)>dth/100){
+//					std::cout<<"Cut timestep by half "<<dt<<" at point "<<i<<" "<<j << " "<<dispr<<""<<dispth<<std::endl;
+//					i=1;
+//					j=1;
+//					dt=dt/2;
+//					continue;
+//				}
+				double r=rmin+i*dr+dispr;
+				double th=j*dth-dispth;
 				//solve 4 point grid to interpolate (or perhaps extrapolate)
 				int imoved=(r-rmin)/dr;
 				int jmoved=th/dth;
@@ -264,15 +241,74 @@ simulate ( )
 					+dt*thtd*eta[i][j]*(gsA[imoved][jmoved]+a*r+b*th+c*r*th);
 			}
 		}
+#endif
+
+		//Update toroidal field function
+		for(int i=0;i<rNum-1;i++){
+			for(int j=0;j<thNum-1;j++){
+				if(i==0&&j==0)
+					continue;
+				double dBr=0;
+				double dBth=0;
+				if(j!=0){
+					dBr+=hall_rflux[i][j]
+						*(B[i+1][j]+B[i][j])
+						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+					dBr+=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
+#ifndef TOROIDAL
+					if(i!=0){
+						dBr+=dt*initial::chi(rmin+i*dr+dr/2,j*dth)
+							*(gsA[i][j]+gsA[i+1][j])
+							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
+							/8/dr/dth;
+					}else{
+						dBr+=dt*initial::chi(rmin+i*dr+dr/2,j*dth)
+							*(3*gsA[i+1][j]-gsA[i+2][j])
+							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
+							/8/dr/dth;
+					}
+#endif
+				}
+				if(i!=0){
+					dBth+=hall_thflux[i][j]
+						*(B[i][j+1]+B[i][j])
+						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+					dBth+=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
+#ifndef TOROIDAL
+					if(j!=0){
+						dBth+=-dt*initial::chi(rmin+i*dr,j*dth+dth/2)
+							*(gsA[i][j]+gsA[i][j+1])
+							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])
+							/8/dr/dth;
+					}else{
+						dBth+=-dt*initial::chi(rmin+i*dr,j*dth+dth/2)
+							*(3*gsA[i][j+1]-gsA[i][j+2])
+							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])
+							/8/dr/dth;
+					}
+#endif
+				}
+				Baux[i][j]+=(dBr+dBth)*sines[j];
+				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
+				Baux[i][j+1]-=dBth*sines[j+1];
+			}
+		}
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
 				//check for blowups, exit program if that happens
-				if(isinf(Baux[i][j])||isinf(Aaux[i][j])){
+
+				if(isinf(Baux[i][j])
+#ifndef TOROIDAL
+						||isinf(Aaux[i][j])
+#endif
+						){
 					io::report_blowup(k,i,j);
 					return 1;
 				}
 				B[i][j]=Baux[i][j];
+#ifndef TOROIDAL
 				A[i][j]=Aaux[i][j];
+#endif
 			}
 		}
 	}
@@ -295,8 +331,13 @@ simulate ( )
 	double*
 solve_integrals ( )
 {
+#ifdef TOROIDAL
+	double *integrals=new double[2];
+	integrals[0]=integrals[1]=0;
+#else
 	double *integrals=new double[3];
 	integrals[0]=integrals[1]=integrals[2]=0;
+#endif
 	double r;
 	for(int i=1;i<rNum-1;i++){
 		r=i*dr+rmin;
@@ -305,13 +346,17 @@ solve_integrals ( )
 			integrals[0]+=B[i][j]/sines[j];
 			//Toroidal energy
 			integrals[1]+=pow(B[i][j],2)/r;
+#ifndef TOROIDAL
 			//Poloidal energy
 			integrals[2]+=pow((A[i+1][j]-A[i-1][j])/2/dr,2)/sines[j]+pow((A[i][j+1]-A[i][j-1])/2/dth,2)/r/r/sines[j];
+#endif
 		}
 	}
 	integrals[0]=integrals[0]*dr*dth;
 	integrals[1]=integrals[1]*dr*dth;
+#ifndef TOROIDAL
 	integrals[2]=integrals[2]*dr*dth;
+#endif
 	return integrals;
 }		/* -----  end of function solve_integrals  ----- */
 

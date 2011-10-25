@@ -185,7 +185,11 @@ create_integrals_file ( )
 {
 	string filename="results_"+timeStream.str()+"/integrals.dat";
 	integrals_file.open(filename.c_str());
+#ifdef TOROIDAL
+	integrals_file << "#t F_t E_T" << endl;
+#else
 	integrals_file << "#t F_t E_T E_P" << endl;
+#endif
 	return;
 }		/* -----  end of function create_integrals_file  ----- */
 
@@ -198,7 +202,11 @@ create_integrals_file ( )
 	void
 log_integrals_file ( double t, double *integrals )
 {
+#ifdef TOROIDAL
 	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << endl;
+#else
+	integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
+#endif
 	return;
 }		/* -----  end of function log_integrals_file  ----- */
 
@@ -224,12 +232,14 @@ close_integrals_file ( )
 	void
 log_field ( int k )
 {
+#ifndef TOROIDAL
 	//construct filename for alpha log file, and open it
 	stringstream AStream;
 	AStream << "results_" << timeStream.str() << "/A_" << k;
 	string filenameA=AStream.str();
 	ofstream resultsA;
 	resultsA.open(filenameA.c_str());
+#endif
 	//construct filename for alpha log file, and open it
 	stringstream BStream;
 	BStream << "results_" << timeStream.str() << "/B_" << k;
@@ -239,14 +249,20 @@ log_field ( int k )
 	//Log values
 	for(int i=0;i<sim::rNum;i++){
 		for(int j=0;j<sim::thNum;j++){
+#ifndef TOROIDAL
 			resultsA << sim::A[i][j] << " ";
+#endif
 			resultsB << sim::B[i][j] << " ";
 		}
+#ifndef TOROIDAL
 		resultsA << endl;
+#endif
 		resultsB << endl;
 	}
 	//close files
+#ifndef TOROIDAL
 	resultsA.close();
+#endif
 	resultsB.close();
 
 	return;

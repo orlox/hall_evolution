@@ -27,7 +27,9 @@ extern int plotSteps;
 extern double thtd;
 //physical values of functions defining the magnetic field.
 extern double **B;
+#ifndef TOROIDAL
 extern double **A;
+#endif
 //physical values that describe the structure of the star.
 extern double **chi;
 extern double **eta;
