@@ -203,9 +203,9 @@ create_integrals_file ( )
 log_integrals_file ( double t, double *integrals )
 {
 #ifdef TOROIDAL
-	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << endl;
-#else
 	integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
+#else
+	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << endl;
 #endif
 	return;
 }		/* -----  end of function log_integrals_file  ----- */

@@ -35,11 +35,15 @@ double **B;
 double **A;
 #endif
 //physical values that describe the structure of the star.
-double **chi;
 double **eta;
+#ifndef PUREOHM
+double **chi;
+#endif
 //arrays that contains the precalculated quantities neccesary to solve fluxes for B
+#ifndef PUREOHM
 double **hall_rflux;
 double **hall_thflux;
+#endif
 double **res_rflux;
 double **res_thflux;
 //sines precalculated at each point in the grid
@@ -64,10 +68,12 @@ initial_conditions ( )
 	A=new double*[rNum];
 #endif
 	B=new double*[rNum];
-	chi=new double*[rNum];
 	eta=new double*[rNum];
+#ifndef PUREOHM
+	chi=new double*[rNum];
 	hall_rflux=new double*[rNum];
 	hall_thflux=new double*[rNum];
+#endif
 	res_rflux=new double*[rNum];
 	res_thflux=new double*[rNum];
 	sines=new double[thNum];
@@ -76,10 +82,12 @@ initial_conditions ( )
 		A[i]=new double[thNum];
 #endif
 		B[i]=new double[thNum];
-		chi[i]=new double[thNum];
 		eta[i]=new double[thNum];
+#ifndef PUREOHM
+		chi[i]=new double[thNum];
 		hall_rflux[i]=new double[thNum];
 		hall_thflux[i]=new double[thNum];
+#endif
 		res_rflux[i]=new double[thNum];
 		res_thflux[i]=new double[thNum];
 	}
@@ -102,8 +110,10 @@ initial_conditions ( )
 			A[i][j]=initial::A(r,th);
 #endif
 			B[i][j]=initial::B(r,th);
-			chi[i][j]=initial::chi(r,th);
 			eta[i][j]=initial::eta(r,th);
+#ifndef PUREOHM
+			chi[i][j]=initial::chi(r,th);
+#endif
 		}
 	}
 
@@ -139,8 +149,10 @@ solve_repeated_values ( )
 		r=rmin+i*dr;
 		for(int j=0;j<thNum-1;j++){
 			th=j*dth;
+#ifndef PUREOHM
 			hall_rflux[i][j] = dt*initial::chi(r+dr/2,th)/8.0/dr/dth;
 			hall_thflux[i][j]=-dt*initial::chi(r,th+dth/2)/8.0/dr/dth;
+#endif
 			res_rflux[i][j]  = dt*thtd*initial::eta(r+dr/2,th)/sin(th)/dr/dr;
 			res_thflux[i][j] = dt*thtd*initial::eta(r,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
 		}
@@ -198,6 +210,7 @@ simulate ( )
 		//update poloidal field function
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
+#ifndef PUREOHM
 				//cut timestep by half if displacement is too large
 				double dispr=dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth;
 				double dispth=-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr;
@@ -232,6 +245,9 @@ simulate ( )
 						-A[imoved+1][jmoved]-A[imoved][jmoved+1])/dr/dth;
 				Aaux[i][j]=(A[imoved][jmoved]+a2*r+b2*th+c2*r*th)
 					+dt*thtd*eta[i][j]*(gsA[imoved][jmoved]+a*r+b*th+c*r*th);
+#else
+				Aaux[i][j]=A[i][j]+dt*thtd*eta[i][j]*gsA[i][j];
+#endif
 			}
 		}
 #endif
@@ -244,11 +260,14 @@ simulate ( )
 				double dBr=0;
 				double dBth=0;
 				if(j!=0){
+#ifndef PUREOHM
 					dBr+=hall_rflux[i][j]
 						*(B[i+1][j]+B[i][j])
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+#endif
 					dBr+=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
 #ifndef TOROIDAL
+#ifndef PUREOHM
 					if(i!=0){
 						dBr+=dt*initial::chi(rmin+i*dr+dr/2,j*dth)
 							*(gsA[i][j]+gsA[i+1][j])
@@ -261,13 +280,17 @@ simulate ( )
 							/8/dr/dth;
 					}
 #endif
+#endif
 				}
 				if(i!=0){
+#ifndef PUREOHM
 					dBth+=hall_thflux[i][j]
 						*(B[i][j+1]+B[i][j])
 						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+#endif
 					dBth+=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
 #ifndef TOROIDAL
+#ifndef PUREOHM
 					if(j!=0){
 						dBth+=-dt*initial::chi(rmin+i*dr,j*dth+dth/2)
 							*(gsA[i][j]+gsA[i][j+1])
@@ -280,6 +303,7 @@ simulate ( )
 							/8/dr/dth;
 					}
 #endif
+#endif
 				}
 				Baux[i][j]+=(dBr+dBth)*sines[j];
 				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
@@ -289,7 +313,6 @@ simulate ( )
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
 				//check for blowups, exit program if that happens
-
 				if(isinf(Baux[i][j])
 #ifndef TOROIDAL
 						||isinf(Aaux[i][j])

@@ -31,6 +31,8 @@ namespace initial{
  *  BOUNDARY CONDITIONS!!: A should be 1 in the axis of symmetry, and it should be such that the magnetic field is completely continuous along the surface of the star (i.e. no surface currents).
  * =====================================================================================
  */
+double k=6.572013199016351;
+double b=-2.125069381043848;
 #ifndef TOROIDAL
 	double
 A ( double r, double th )
@@ -38,7 +40,7 @@ A ( double r, double th )
 	//test for rmin=0
 	//return pow(sin(th),2)*(9.0/5.0*pow(r,2)-14.0/5.0*pow(r,4)+pow(r,6));
 	//test for rmin=0.5
-	return pow(sin(th),2)*(-13.0/304.0+15.0/152.0*pow(r,2)+345.0/304.0*pow(r,4)-333.0/152*pow(r,5)+pow(r,6));
+	return pow(sin(th),2)*((sin(k*r)/(k*r)-cos(k*r))/(k)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k));
 }		/* -----  end of function Ai  ----- */
 #endif
 
@@ -50,15 +52,11 @@ A ( double r, double th )
  *  BOUNDARY CONDITIONS!!: B should be 0 in the axis of symmetry (because currents must remain bounded there) and at the surface of the star (to avoid surface currents).
  * =====================================================================================
  */
-double k2=6.572013199016351;
-double b2=-2.125069381043848;
-double k=12.72135634741802;
-double b=-4.205800731231387;
 	double
 B ( double r, double th )
 {
 	//return 0;
-	return 10*((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th)+((sin(k2*r)/(k2*r)-cos(k2*r))/(k2*r)+(b2*(-sin(k2*r)-cos(k2*r)/(k2*r)))/(k2*r))*sin(th)*r*sin(th);
+	return ((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 
@@ -93,10 +91,11 @@ eta ( double r, double th )
  *  !!!THIS FUNCTION SHOULD NOT BE CHANGED!!!
  * =====================================================================================
  */
+#ifndef PUREOHM
 	double
 chi ( double r, double th )
 {
 	return 1/(pow(r*sin(th),2)*n(r,th));
 }		/* -----  end of function chi  ----- */
-
+#endif
 }		/* -----  end of namespace initial  ----- */
