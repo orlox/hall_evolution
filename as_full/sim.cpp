@@ -201,13 +201,6 @@ simulate ( )
 				//cut timestep by half if displacement is too large
 				double dispr=dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth;
 				double dispth=-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr;
-//				if(fabs(dispr)>dr/100||fabs(dispth)>dth/100){
-//					std::cout<<"Cut timestep by half "<<dt<<" at point "<<i<<" "<<j << " "<<dispr<<""<<dispth<<std::endl;
-//					i=1;
-//					j=1;
-//					dt=dt/2;
-//					continue;
-//				}
 				double r=rmin+i*dr+dispr;
 				double th=j*dth-dispth;
 				//solve 4 point grid to interpolate (or perhaps extrapolate)

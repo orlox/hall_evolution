@@ -50,13 +50,15 @@ A ( double r, double th )
  *  BOUNDARY CONDITIONS!!: B should be 0 in the axis of symmetry (because currents must remain bounded there) and at the surface of the star (to avoid surface currents).
  * =====================================================================================
  */
-double k=6.572013199016351;
-double b=-2.125069381043848;
+double k2=6.572013199016351;
+double b2=-2.125069381043848;
+double k=12.72135634741802;
+double b=-4.205800731231387;
 	double
 B ( double r, double th )
 {
 	//return 0;
-	return 5*((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
+	return 10*((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th)+((sin(k2*r)/(k2*r)-cos(k2*r))/(k2*r)+(b2*(-sin(k2*r)-cos(k2*r)/(k2*r)))/(k2*r))*sin(th)*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 
