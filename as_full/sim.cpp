@@ -21,6 +21,7 @@
 #include "sim.h"
 #include "io.h"
 #include "initial.h"
+#include <gsl/gsl_sf.h>
 namespace sim{
 //values given as cli arguments.
 int rNum;
@@ -130,6 +131,9 @@ initial_conditions ( )
 #endif
 		B[0][j]=B[rNum-1][j]=0;
 	}
+#ifndef TOROIDAL
+	solve_A_boundary();
+#endif
 	
 	return;
 }		/* -----  end of function initial_conditions  ----- */
@@ -211,40 +215,44 @@ simulate ( )
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
 #ifndef PUREOHM
-				//cut timestep by half if displacement is too large
-				double dispr=dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth;
-				double dispth=-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr;
-				double r=rmin+i*dr+dispr;
-				double th=j*dth-dispth;
-				//solve 4 point grid to interpolate (or perhaps extrapolate)
-				int imoved=(r-rmin)/dr;
-				int jmoved=th/dth;
-				if(imoved==0){
-					imoved=1;
-				}
-				if(jmoved==0){
-					jmoved=1;
-				}
-				if(imoved==rNum-2){
-					imoved=rNum-3;
-				}
-				if(jmoved==thNum-2){
-					jmoved=thNum-3;
-				}
-				r-=(rmin+imoved*dr);
-				th-=(jmoved*dth);
-				//using the four points, approximate the grad-shafranov of alpha
-				double a=(gsA[imoved+1][jmoved]-gsA[imoved][jmoved])/dr;
-				double b=(gsA[imoved][jmoved+1]-gsA[imoved][jmoved])/dth;
-				double c=(gsA[imoved][jmoved]+gsA[imoved+1][jmoved+1]
-						-gsA[imoved+1][jmoved]-gsA[imoved][jmoved+1])/dr/dth;
-
-				double a2=(A[imoved+1][jmoved]-A[imoved][jmoved])/dr;
-				double b2=(A[imoved][jmoved+1]-A[imoved][jmoved])/dth;
-				double c2=(A[imoved][jmoved]+A[imoved+1][jmoved+1]
-						-A[imoved+1][jmoved]-A[imoved][jmoved+1])/dr/dth;
-				Aaux[i][j]=(A[imoved][jmoved]+a2*r+b2*th+c2*r*th)
-					+dt*thtd*eta[i][j]*(gsA[imoved][jmoved]+a*r+b*th+c*r*th);
+//				//cut timestep by half if displacement is too large
+//				double dispr=dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth;
+//				double dispth=-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr;
+//				double r=rmin+i*dr+dispr;
+//				double th=j*dth-dispth;
+//				//solve 4 point grid to interpolate (or perhaps extrapolate)
+//				int imoved=(r-rmin)/dr;
+//				int jmoved=th/dth;
+//				if(imoved==0){
+//					imoved=1;
+//				}
+//				if(jmoved==0){
+//					jmoved=1;
+//				}
+//				if(imoved==rNum-2){
+//					imoved=rNum-3;
+//				}
+//				if(jmoved==thNum-2){
+//					jmoved=thNum-3;
+//				}
+//				r-=(rmin+imoved*dr);
+//				th-=(jmoved*dth);
+//				//using the four points, approximate the grad-shafranov of alpha
+//				double a=(gsA[imoved+1][jmoved]-gsA[imoved][jmoved])/dr;
+//				double b=(gsA[imoved][jmoved+1]-gsA[imoved][jmoved])/dth;
+//				double c=(gsA[imoved][jmoved]+gsA[imoved+1][jmoved+1]
+//						-gsA[imoved+1][jmoved]-gsA[imoved][jmoved+1])/dr/dth;
+//
+//				double a2=(A[imoved+1][jmoved]-A[imoved][jmoved])/dr;
+//				double b2=(A[imoved][jmoved+1]-A[imoved][jmoved])/dth;
+//				double c2=(A[imoved][jmoved]+A[imoved+1][jmoved+1]
+//						-A[imoved+1][jmoved]-A[imoved][jmoved+1])/dr/dth;
+//				Aaux[i][j]=(A[imoved][jmoved]+a2*r+b2*th+c2*r*th)
+//					+dt*thtd*eta[i][j]*(gsA[imoved][jmoved]+a*r+b*th+c*r*th);
+				Aaux[i][j]=A[i][j]
+					+dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth*(A[i+1][j]-A[i-1][j])/2/dr
+					-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr*(A[i][j+1]-A[i][j-1])/2/dth
+					+dt*thtd*eta[i][j]*gsA[i][j];
 #else
 				Aaux[i][j]=A[i][j]+dt*thtd*eta[i][j]*gsA[i][j];
 #endif
@@ -310,7 +318,10 @@ simulate ( )
 				Baux[i][j+1]-=dBth*sines[j+1];
 			}
 		}
-		for(int i=1;i<rNum-1;i++){
+#ifndef TOROIDAL
+		solve_A_boundary();
+#endif
+		for(int i=1;i<rNum;i++){
 			for(int j=1;j<thNum-1;j++){
 				//check for blowups, exit program if that happens
 				if(isinf(Baux[i][j])
@@ -321,7 +332,8 @@ simulate ( )
 					io::report_blowup(k,i,j);
 					return 1;
 				}
-				B[i][j]=Baux[i][j];
+				if(i!=rNum-1)
+					B[i][j]=Baux[i][j];
 #ifndef TOROIDAL
 				A[i][j]=Aaux[i][j];
 #endif
@@ -375,5 +387,46 @@ solve_integrals ( )
 #endif
 	return integrals;
 }		/* -----  end of function solve_integrals  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  solve_A_boundary
+ *  Description:  Solves the boundary values of A such that the field connects smoothly to a potential field outside the star
+ * =====================================================================================
+ */
+#ifndef TOROIDAL
+	void
+solve_A_boundary ( )
+{
+	//maximun l for the spherical harmonics expansion
+	int l=10;
+	//solve the required legendre polynomial on all required points
+	double P[l+1][thNum];
+	for(int i=0;i<=l;i++){
+		for(int j=1;j<thNum-1;j++){
+			P[i][j]=gsl_sf_legendre_Pl(i,cos(j*dth));
+		}
+	}
+	//solve integrated coefficients
+	double a[l];
+	for(int i=0;i<l;i++){
+		a[i]=0
+		for(int j=1;j<thNum-1;j++){
+			a[i]+=(A[rNum-2][j+1]-A[rNum-2][j-1])/2*P[i+1][j]*dr*(i+1)*(2*i+3)/(i+1);
+		}
+	}
+	//set boundary to A[rNum-3][j] to start summation
+	for(int j=1;j<thNum-1;j++){
+		A[rNum-1][j]=A[rNum-3][j];
+	}
+	//permorm sumation
+	for(int i=0;i<l;i++){
+		for(int j=1;j<thNum-1;j++){
+			A[rNum-1][j]+=a[i]*(cos(j*dth)*P[i+1][j]-P[i][j]);
+		}
+	}
+	return;
+}		/* -----  end of function solve_A_boundary  ----- */
+#endif
 
 }		/* -----  end of namespace sim  ----- */

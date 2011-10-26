@@ -19,6 +19,8 @@
  */
 #include "initial.h"
 #include <math.h>
+#include <gsl/gsl_sf.h>
+
 namespace initial{
 	//minimun radius of the shell containing the magnetic field
 	double rmin=0.5;
@@ -40,7 +42,7 @@ A ( double r, double th )
 	//test for rmin=0
 	//return pow(sin(th),2)*(9.0/5.0*pow(r,2)-14.0/5.0*pow(r,4)+pow(r,6));
 	//test for rmin=0.5
-	return pow(sin(th),2)*((sin(k*r)/(k*r)-cos(k*r))/(k)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k));
+	return pow(sin(th),2)*(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*r;
 }		/* -----  end of function Ai  ----- */
 #endif
 
@@ -56,7 +58,7 @@ A ( double r, double th )
 B ( double r, double th )
 {
 	//return 0;
-	return ((sin(k*r)/(k*r)-cos(k*r))/(k*r)+(b*(-sin(k*r)-cos(k*r)/(k*r)))/(k*r))*sin(th)*r*sin(th);
+	return 20*(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 

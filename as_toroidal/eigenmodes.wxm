@@ -22,7 +22,7 @@ kk:%;
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-1/kk**2;
+1/2/kk**2;
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
@@ -79,6 +79,54 @@ f(r,th):=A1+a*r+b*th+c*r*th;
 
 /* [wxMaxima: input   start ] */
 solve([f(dr,0)=A2,f(0,dth)=A3,f(dr,dth)=A4],[a,b,c]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+0.053/4.7;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+1/0.011-1/0.003;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+log(0.011);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+exp(%);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+-4.51/242;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+4
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+spherical_bessel_j(1,x)*x;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+spherical_bessel_y(1,x)*x;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+wxplot2d([0.5*spherical_bessel_j(1,0.5*k)*spherical_bessel_y(1,k)-0.5*spherical_bessel_j(1,k)*spherical_bessel_y(1,0.5*k)], [k,3,18])$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+f(x):=spherical_bessel_j(0,x*sqrt(l));
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+x**2*diff(f(x),x,2)+2*1*x*diff(f(x),x)+l*x**2*f(x);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+ratsimp(%);
 /* [wxMaxima: input   end   ] */
 
 /* Maxima can't load/batch files which end with a comment! */
