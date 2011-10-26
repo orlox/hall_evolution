@@ -53,5 +53,7 @@ void solve_repeated_values();
 int simulate();
 //function that solves integrated quantities
 double* solve_integrals();
+//function that solves integrated quantities
+void solve_A_boundary();
 }
 #endif

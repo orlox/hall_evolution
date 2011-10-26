@@ -410,7 +410,7 @@ solve_A_boundary ( )
 	//solve integrated coefficients
 	double a[l];
 	for(int i=0;i<l;i++){
-		a[i]=0
+		a[i]=0;
 		for(int j=1;j<thNum-1;j++){
 			a[i]+=(A[rNum-2][j+1]-A[rNum-2][j-1])/2*P[i+1][j]*dr*(i+1)*(2*i+3)/(i+1);
 		}
