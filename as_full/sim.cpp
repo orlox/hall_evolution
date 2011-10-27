@@ -112,6 +112,9 @@ initial_conditions ( )
 #endif
 			B[i][j]=initial::B(r,th);
 			eta[i][j]=initial::eta(r,th);
+			if(j==rNum/2){
+				std::cout<<r<<" "<<th<<" "<<B[i][j]<<" "<<i<<" "<<j<<std::endl;
+			}
 #ifndef PUREOHM
 			chi[i][j]=initial::chi(r,th);
 #endif
@@ -132,7 +135,9 @@ initial_conditions ( )
 		B[0][j]=B[rNum-1][j]=0;
 	}
 #ifndef TOROIDAL
+#ifndef SIMPLE
 	solve_A_boundary();
+#endif
 #endif
 	
 	return;
@@ -276,14 +281,19 @@ simulate ( )
 					dBr+=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
 #ifndef TOROIDAL
 #ifndef PUREOHM
-					if(i!=0){
+					if(i!=0&&i!=rNum-2){
 						dBr+=dt*initial::chi(rmin+i*dr+dr/2,j*dth)
 							*(gsA[i][j]+gsA[i+1][j])
 							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
 							/8/dr/dth;
-					}else{
+					}else if(i==0){
 						dBr+=dt*initial::chi(rmin+i*dr+dr/2,j*dth)
 							*(3*gsA[i+1][j]-gsA[i+2][j])
+							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
+							/8/dr/dth;
+					}else{
+						dBr+=dt*initial::chi(rmin+i*dr+dr/2,j*dth)
+							*(3*gsA[i][j]-gsA[i-1][j])
 							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])
 							/8/dr/dth;
 					}
@@ -318,10 +328,7 @@ simulate ( )
 				Baux[i][j+1]-=dBth*sines[j+1];
 			}
 		}
-#ifndef TOROIDAL
-		solve_A_boundary();
-#endif
-		for(int i=1;i<rNum;i++){
+		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
 				//check for blowups, exit program if that happens
 				if(isinf(Baux[i][j])
@@ -332,13 +339,17 @@ simulate ( )
 					io::report_blowup(k,i,j);
 					return 1;
 				}
-				if(i!=rNum-1)
-					B[i][j]=Baux[i][j];
+				B[i][j]=Baux[i][j];
 #ifndef TOROIDAL
 				A[i][j]=Aaux[i][j];
 #endif
 			}
 		}
+#ifndef TOROIDAL
+#ifndef SIMPLE
+		solve_A_boundary();
+#endif
+#endif
 	}
 
 	//Close file where integrated quantities are logged
@@ -395,11 +406,12 @@ solve_integrals ( )
  * =====================================================================================
  */
 #ifndef TOROIDAL
+#ifndef SIMPLE
 	void
 solve_A_boundary ( )
 {
-	//maximun l for the spherical harmonics expansion
-	int l=10;
+	//maximum l for the spherical harmonics expansion
+	int l=5;
 	//solve the required legendre polynomial on all required points
 	double P[l+1][thNum];
 	for(int i=0;i<=l;i++){
@@ -412,21 +424,22 @@ solve_A_boundary ( )
 	for(int i=0;i<l;i++){
 		a[i]=0;
 		for(int j=1;j<thNum-1;j++){
-			a[i]+=(A[rNum-2][j+1]-A[rNum-2][j-1])/2*P[i+1][j]*dr*(i+1)*(2*i+3)/(i+1);
+			a[i]+=(A[rNum-2][j+1]-A[rNum-2][j-1])*P[i+1][j]*dr*(i+1)*(2*i+3)/(i+2)/4*pow(1-dr,i+1);
 		}
 	}
-	//set boundary to A[rNum-3][j] to start summation
+	//set boundary to A[rNum-2][j] to start summation
 	for(int j=1;j<thNum-1;j++){
-		A[rNum-1][j]=A[rNum-3][j];
+		A[rNum-1][j]=A[rNum-2][j];
 	}
 	//permorm sumation
 	for(int i=0;i<l;i++){
 		for(int j=1;j<thNum-1;j++){
-			A[rNum-1][j]+=a[i]*(cos(j*dth)*P[i+1][j]-P[i][j]);
+			A[rNum-1][j]+=a[i]*(cos(j*dth)*P[i+1][j]-P[i][j])/pow(1-dr/2,i+2);
 		}
 	}
 	return;
 }		/* -----  end of function solve_A_boundary  ----- */
+#endif
 #endif
 
 }		/* -----  end of namespace sim  ----- */

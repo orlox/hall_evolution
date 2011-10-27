@@ -23,7 +23,9 @@
 
 namespace initial{
 	//minimun radius of the shell containing the magnetic field
-	double rmin=0;
+	double rmin=0.5;
+	double k=6.572013199016351;
+	double b=-2.125069381043848;
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -33,16 +35,14 @@ namespace initial{
  *  BOUNDARY CONDITIONS!!: A should be 1 in the axis of symmetry, and it should be such that the magnetic field is completely continuous along the surface of the star (i.e. no surface currents).
  * =====================================================================================
  */
-//double k=6.572013199016351;
-//double b=-2.125069381043848;
 #ifndef TOROIDAL
 	double
 A ( double r, double th )
 {
-	//test for rmin=0
-	return pow(sin(th),2)*(9.0/5.0*pow(r,2)-14.0/5.0*pow(r,4)+pow(r,6));
+	//test for rmin=0, with field outside the star
+	//return pow(sin(th),2)*(5.0*pow(r,2)-3.0*pow(r,4)-17.0/32.0/r);
 	//test for rmin=0.5
-	//return pow(sin(th),2)*(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*r;
+	return pow(sin(th),2)*(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*r;
 }		/* -----  end of function Ai  ----- */
 #endif
 
@@ -57,8 +57,7 @@ A ( double r, double th )
 	double
 B ( double r, double th )
 {
-	//return 0;
-	return 0;//(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
+	return (gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 
