@@ -239,6 +239,13 @@ log_field ( int k )
 	string filenameA=AStream.str();
 	ofstream resultsA;
 	resultsA.open(filenameA.c_str());
+	for(int i=0;i<2*sim::rNum-1;i++){
+		for(int j=0;j<2*sim::thNum-1;j++){
+			resultsA << sim::A[i][j] << " ";
+		}
+		resultsA << endl;
+	}
+	resultsA.close();
 #endif
 	//construct filename for alpha log file, and open it
 	stringstream BStream;
@@ -249,20 +256,11 @@ log_field ( int k )
 	//Log values
 	for(int i=0;i<sim::rNum;i++){
 		for(int j=0;j<sim::thNum;j++){
-#ifndef TOROIDAL
-			resultsA << sim::A[i][j] << " ";
-#endif
 			resultsB << sim::B[i][j] << " ";
 		}
-#ifndef TOROIDAL
-		resultsA << endl;
-#endif
 		resultsB << endl;
 	}
 	//close files
-#ifndef TOROIDAL
-	resultsA.close();
-#endif
 	resultsB.close();
 
 	return;
