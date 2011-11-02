@@ -324,7 +324,7 @@ simulate ( )
 		}
 #ifndef TOROIDAL
 #ifndef SIMPLE
-		//solve_A_boundary();
+		solve_A_boundary();
 #endif
 #endif
 	}
