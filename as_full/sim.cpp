@@ -255,28 +255,47 @@ simulate ( )
 				double th=j*dth/2;
 				Aaux[i][j]=A[i][j];
 #ifndef PUREOHM
-				//add hall contribution, derivatives on beta are solved in different ways, since alpha grid is more refined.
-				double der_B_r=0,der_B_th=0;
-				//this condition checks if it is midpoint in the r direction
-				if((i-1)%2==0){
-					//this condition checks if it is midpoint in the theta direction
-					if((j-1)%2==0){
-						der_B_r =(B[(i-1)/2+1][(j-1)/2+1]+B[(i-1)/2+1][(j-1)/2]-B[(i-1)/2][(j-1)/2+1]-B[(i-1)/2][(j-1)/2])/2/dr;
-						der_B_th=(B[(i-1)/2+1][(j-1)/2+1]+B[(i-1)/2][(j-1)/2+1]-B[(i-1)/2+1][(j-1)/2]-B[(i-1)/2][(j-1)/2])/2/dth;
-					}else{
-						der_B_r =(B[(i-1)/2+1][j/2]-B[(i-1)/2][j/2])/dr;
-						der_B_th=(B[(i-1)/2+1][j/2+1]+B[(i-1)/2][j/2+1]-B[(i-1)/2+1][j/2-1]-B[(i-1)/2][j/2-1])/4/dth;
-					}
-				}else{
-					if((j-1)%2==0){
-						der_B_r =(B[i/2+1][(j-1)/2+1]+B[i/2+1][(j-1)/2]-B[i/2-1][(j-1)/2+1]-B[i/2-1][(j-1)/2])/4/dr;
-						der_B_th=(B[i/2][(j-1)/2+1]-B[i/2][(j-1)/2])/dth;
-					}else{
-						der_B_r =(B[i/2+1][j/2]-B[i/2-1][j/2])/2/dr;
-						der_B_th=(B[i/2][j/2+1]-B[i/2][j/2-1])/2/dth;
-					}
-				}
-				Aaux[i][j]+=sin(th)*initial::chi(r,th)*(der_B_th*(A[i+1][j]-A[i-1][j])/dr-der_B_r*(A[i][j+1]-A[i][j-1])/dth)*dt;
+//				//cut timestep by half if displacement is too large
+//				double dispr=dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth;
+//				double dispth=-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr;
+//				double r=rmin+i*dr+dispr;
+//				double th=j*dth-dispth;
+//				//solve 4 point grid to interpolate (or perhaps extrapolate)
+//				int imoved=(r-rmin)/dr;
+//				int jmoved=th/dth;
+//				if(imoved==0){
+//					imoved=1;
+//				}
+//				if(jmoved==0){
+//					jmoved=1;
+//				}
+//				if(imoved==rNum-2){
+//					imoved=rNum-3;
+//				}
+//				if(jmoved==thNum-2){
+//					jmoved=thNum-3;
+//				}
+//				r-=(rmin+imoved*dr);
+//				th-=(jmoved*dth);
+//				//using the four points, approximate the grad-shafranov of alpha
+//				double a=(gsA[imoved+1][jmoved]-gsA[imoved][jmoved])/dr;
+//				double b=(gsA[imoved][jmoved+1]-gsA[imoved][jmoved])/dth;
+//				double c=(gsA[imoved][jmoved]+gsA[imoved+1][jmoved+1]
+//						-gsA[imoved+1][jmoved]-gsA[imoved][jmoved+1])/dr/dth;
+//
+//				double a2=(A[imoved+1][jmoved]-A[imoved][jmoved])/dr;
+//				double b2=(A[imoved][jmoved+1]-A[imoved][jmoved])/dth;
+//				double c2=(A[imoved][jmoved]+A[imoved+1][jmoved+1]
+//						-A[imoved+1][jmoved]-A[imoved][jmoved+1])/dr/dth;
+//				Aaux[i][j]=(A[imoved][jmoved]+a2*r+b2*th+c2*r*th)
+//					+dt*thtd*eta[i][j]*(gsA[imoved][jmoved]+a*r+b*th+c*r*th);
+				Aaux[i][j]=A[i][j]
+					+dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth*(A[i+1][j]-A[i-1][j])/2/dr
+					-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr*(A[i][j+1]-A[i][j-1])/2/dth
+					+dt*thtd*eta[i][j]*gsA[i][j];
+#else
+				Aaux[i][j]=A[i][j]+dt*thtd*eta[i][j]*gsA[i][j];
+				Aaux[i][j]=(gsA[i][j]-105.0/2*(-pow(x,2)+pow(x,4))*sin(th)*sin(th))/(105.0/2*(-pow(x,2)+pow(x,4))*sin(th)*sin(th));
 #endif
 				//add ohm contribution
 				Aaux[i][j]+=dt*thtd*initial::eta(r,th)*gsA[i][j];

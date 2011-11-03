@@ -24,7 +24,7 @@
 namespace initial{
 	//minimun radius of the shell containing the magnetic field
 	double rmin=0;
-	double k=4.4934;
+	double k=6.572013199016351;
 	double b=-2.125069381043848;
 
 /* 
@@ -43,6 +43,7 @@ A ( double r, double th )
 	return pow(sin(th),2)*(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15.0/8.0*pow(r,6));
 	//test for rmin=0.5
 	//return pow(sin(th),2)*(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*r;
+	return pow(sin(th),2)*(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15/8*pow(r,6));
 }		/* -----  end of function Ai  ----- */
 #endif
 
@@ -57,7 +58,7 @@ A ( double r, double th )
 	double
 B ( double r, double th )
 {
-	return 5*(gsl_sf_bessel_jl(1,k*r))*r*sin(th);//+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
+	return 0;//(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 
