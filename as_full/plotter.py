@@ -87,6 +87,21 @@ for xvalue in x :
 
 k=0
 while 1:
+    #do not plot this timestep if plot exists
+    #add zeros to the number of the plot, so they are ordered appropately
+    num_file=str(k)
+    diff_zeros=len(str(tNum))-len(str(k))
+    while diff_zeros>0:
+        num_file="0"+num_file
+        diff_zeros-=1
+    try:
+        data=open(folder+"plot_"+num_file+".png")
+        data.close()
+        k+=plotSteps
+        continue
+    except:
+        print num_file
+
     #read A file
     data
     try:
@@ -145,13 +160,6 @@ while 1:
     plt.imshow(ZB.T,extent=[0,1,-1,1],origin="lower")
     plt.colorbar()
     a.set_title("beta")
-    #add zeros to the number of the plot, so they are ordered appropately
-    num_file=str(k)
-    diff_zeros=len(str(tNum))-len(str(k))
-    while diff_zeros>0:
-        num_file="0"+num_file
-        diff_zeros-=1
-    print num_file
 
     #save to file
     savefig(folder+"plot_"+num_file+".png", dpi=None, facecolor='w', edgecolor='w',

@@ -24,7 +24,7 @@
 namespace initial{
 	//minimun radius of the shell containing the magnetic field
 	double rmin=0;
-	double k=6.572013199016351;
+	double k=4.493409457909064;
 	double b=-2.125069381043848;
 
 /* 
@@ -43,7 +43,7 @@ A ( double r, double th )
 	return pow(sin(th),2)*(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15.0/8.0*pow(r,6));
 	//test for rmin=0.5
 	//return pow(sin(th),2)*(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*r;
-	return pow(sin(th),2)*(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15/8*pow(r,6));
+	return pow(sin(th),2)*(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15.0/8.0*pow(r,6));
 }		/* -----  end of function Ai  ----- */
 #endif
 
@@ -58,20 +58,48 @@ A ( double r, double th )
 	double
 B ( double r, double th )
 {
-	return 0;//(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
+	return 30*(gsl_sf_bessel_jl(1,k*r))*r*sin(th);//+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 
  * ===  FUNCTION  ======================================================================
- *         Name:  rho
+ *         Name:  n
  *  Description:  Gives the value of the electron density at a given radius and theta.
  * =====================================================================================
  */
 	double
 n ( double r, double th )
 {
-	return (1-pow(r,2));
+	return 1;//(1-pow(r,2));
 }		/* -----  end of function n  ----- */
+
+#ifndef PUREOHM
+#ifndef TOROIDAL
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  n_rderivative
+ *  Description:  Gives the radial derivative of n at a given radius and theta
+ * =====================================================================================
+ */
+	double
+n_rderivative ( double r, double th )
+{
+	return 0;//-2*r;
+}		/* -----  end of function n_rderivative  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  n_thderivative
+ *  Description:  Gives the theta derivative of n at a given radius and theta
+ * =====================================================================================
+ */
+	double
+n_thderivative ( double r, double th )
+{
+	return 0;
+}		/* -----  end of function n_thderivative  ----- */
+#endif
+#endif
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -85,6 +113,7 @@ eta ( double r, double th )
 	return 1;
 }		/* -----  end of function eta  ----- */
 
+#ifndef PUREOHM
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  chi
@@ -93,11 +122,40 @@ eta ( double r, double th )
  *  !!!THIS FUNCTION SHOULD NOT BE CHANGED!!!
  * =====================================================================================
  */
-#ifndef PUREOHM
 	double
 chi ( double r, double th )
 {
 	return 1/(pow(r*sin(th),2)*n(r,th));
 }		/* -----  end of function chi  ----- */
+
+#ifndef TOROIDAL
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  chi_rderivative
+ *  Description:  Gives the value of the r derivative of chi (which goes as -(2*n+r*dn/dr)/(r^3*sin^2(th)*n^2)) at a given radius and theta.
+ *
+ *  !!!THIS FUNCTION SHOULD NOT BE CHANGED!!!
+ * =====================================================================================
+ */
+	double
+chi_rderivative ( double r, double th )
+{
+	return -(2*n(r,th)+r*n_rderivative(r,th))/(pow(r,3)*pow(sin(th)*n(r,th),2));
+}		/* -----  end of function chi_rderivative  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  chi_thderivative
+ *  Description:  Gives the value of the theta derivative of chi (which goes as -(2*cos(th)*n+sin(th)*dn/dth)/(r^2*sin^3(th)*n^2)) at a given radius and theta.
+ *
+ *  !!!THIS FUNCTION SHOULD NOT BE CHANGED!!!
+ * =====================================================================================
+ */
+	double
+chi_thderivative ( double r, double th )
+{
+	return -(2*cos(th)*n(r,th)+sin(th)*n_thderivative(r,th))/(pow(sin(th),3)*pow(r*n(r,th),2));
+}		/* -----  end of function chi_thderivative  ----- */
+#endif
 #endif
 }		/* -----  end of namespace initial  ----- */

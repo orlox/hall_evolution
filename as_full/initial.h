@@ -26,7 +26,11 @@ namespace initial{
 	//functions that describe the structure of the star.
 	//chi(r,th) should not be modified.
 	double n( double r, double th );
+	double n_rderivative( double r, double th );
+	double n_thderivative( double r, double th );
 	double chi( double r, double th );
+	double chi_rderivative( double r, double th );
+	double chi_thderivative( double r, double th );
 	double eta( double r, double th );
 }
 #endif

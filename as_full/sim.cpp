@@ -196,8 +196,14 @@ simulate ( )
 	//Begin simulation
 	double t;
 #ifndef TOROIDAL
-	double Aaux[2*rNum-1][2*thNum-1];
-	double gsA[2*rNum-1][2*thNum-1];
+	double Aaux[rNum][thNum];
+	double gsA[rNum][thNum];
+	for(int i=0;i<rNum;i++){
+		gsA[i][0]=gsA[i][thNum-1]=0;
+	}
+	for(int j=0;j<thNum;j++){
+		gsA[0][j]=gsA[rNum-1][j]=0;
+	}
 #endif
 	double Baux[rNum][thNum];
 	for(int k=0;k<=tNum;k++){
@@ -216,43 +222,21 @@ simulate ( )
 		}
 #ifndef TOROIDAL
 		//Solve grad shafranov operator acting on A on all grid (except boundaries)
-		for(int i=1;i<2*rNum-2;i++){
-			double r=rmin+i*dr/2;
-			for(int j=1;j<2*thNum-2;j++){
-				double th=j*dth/2;
-				gsA[i][j]=0;
-				//If possible, use 5 point stencil centered on r coordinate
-				if(i!=1&&i!=2*rNum-3){
-					gsA[i][j]+=(-A[i+2][j]+16*A[i+1][j]-30*A[i][j]+16*A[i-1][j]-A[i-2][j])/dr/dr/3;
-				}
-				//If possible, use 5 point stencil centered on theta coordinate
-				if(j!=1&&j!=2*thNum-3){
-					gsA[i][j]+=1/r/r*(-A[i][j+2]+16*A[i][j+1]-30*A[i][j]+16*A[i][j-1]-A[i][j-2])/dth/dth/3
-						-1/r/r*cos(th)/sin(th)*(-A[i][j+2]+8*A[i][j+1]-8*A[i][j-1]+A[i][j-2])/dth/6;
-				}
-				//Use 5 point uncentered stencil otherwise
-				if(i==1){
-					gsA[i][j]+=(11*A[i-1][j]-20*A[i][j]+6*A[i+1][j]+4*A[i+2][j]-A[i+3][j])/dr/dr/3;
-				}
-				if(j==1){
-					gsA[i][j]+=1/r/r*(11*A[i][j-1]-20*A[i][j]+6*A[i][j+1]+4*A[i][j+2]-A[i][j+3])/dth/dth/3
-						-1/r/r*cos(th)/sin(th)*(-3*A[i][j-1]-10*A[i][j]+18*A[i][j+1]-6*A[i][j+2]+A[i][j+3])/dth/6;
-				}
-				if(i==2*rNum-3){
-					gsA[i][j]+=(11*A[i+1][j]-20*A[i][j]+6*A[i-1][j]+4*A[i-2][j]-A[i-3][j])/dr/dr/3;
-				}
-				if(j==2*thNum-3){
-					gsA[i][j]+=1/r/r*(11*A[i][j+1]-20*A[i][j]+6*A[i][j-1]+4*A[i][j-2]-A[i][j-3])/dth/dth/3
-						-1/r/r*cos(th)/sin(th)*(3*A[i][j+1]+10*A[i][j]-18*A[i][j-1]+6*A[i][j-2]-A[i][j-3])/dth/6;
-				}
+		for(int i=1;i<rNum-1;i++){
+			double r=rmin+i*dr;
+			for(int j=1;j<thNum-1;j++){
+				double th=j*dth;
+				//gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/pow(dr,2)+1/r/r*sin(th)*((A[i][j+1]-A[i][j])/sin(th+dth/2)-(A[i][j]-A[i][j-1])/sin(th-dth/2))/dth/dth;
+				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cos(th)/sin(th)*(A[i][j+1]-A[i][j-1])/2/dth;
+				gsA[i][j]=(105.0/2.0*(-pow(r,2)+pow(r,4))*pow(sin(th),2));
 			}
 		}
 
 		//update poloidal field function
-		for(int i=1;i<2*rNum-2;i++){
-			double r=rmin+i*dr/2;
-			for(int j=1;j<2*thNum-2;j++){
-				double th=j*dth/2;
+		for(int i=1;i<rNum-1;i++){
+			//double r=rmin+i*dr;
+			for(int j=1;j<thNum-1;j++){
+				//double th=i*dth;
 				Aaux[i][j]=A[i][j];
 #ifndef PUREOHM
 //				//cut timestep by half if displacement is too large
@@ -289,24 +273,20 @@ simulate ( )
 //						-A[imoved+1][jmoved]-A[imoved][jmoved+1])/dr/dth;
 //				Aaux[i][j]=(A[imoved][jmoved]+a2*r+b2*th+c2*r*th)
 //					+dt*thtd*eta[i][j]*(gsA[imoved][jmoved]+a*r+b*th+c*r*th);
-				Aaux[i][j]=A[i][j]
-					+dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth*(A[i+1][j]-A[i-1][j])/2/dr
-					-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr*(A[i][j+1]-A[i][j-1])/2/dth
-					+dt*thtd*eta[i][j]*gsA[i][j];
-#else
-				Aaux[i][j]=A[i][j]+dt*thtd*eta[i][j]*gsA[i][j];
-				Aaux[i][j]=(gsA[i][j]-105.0/2*(-pow(x,2)+pow(x,4))*sin(th)*sin(th))/(105.0/2*(-pow(x,2)+pow(x,4))*sin(th)*sin(th));
+				Aaux[i][j]=
+					 dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth*(A[i+1][j]-A[i-1][j])/2/dr
+					-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr*(A[i][j+1]-A[i][j-1])/2/dth;
 #endif
-				//add ohm contribution
-				Aaux[i][j]+=dt*thtd*initial::eta(r,th)*gsA[i][j];
-				//Aaux[i][j]=(gsA[i][j]-(105.0/2.0*(-pow(r,2)+pow(r,4))*pow(sin(th),2)))/(105.0/2.0*(-pow(r,2)+pow(r,4))*pow(sin(th),2));
+				Aaux[i][j]+=A[i][j]+dt*thtd*eta[i][j]*gsA[i][j];
 			}
 		}
 #endif
 
 		//Update toroidal field function
 		for(int i=0;i<rNum-1;i++){
+			double r=rmin+i*dr;
 			for(int j=0;j<thNum-1;j++){
+				double th=j*dth;
 				if(i==0&&j==0)
 					continue;
 				double dBr=0;
@@ -316,12 +296,6 @@ simulate ( )
 					dBr+=hall_rflux[i][j]
 						*(B[i+1][j]+B[i][j])
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
-#ifndef TOROIDAL
-					dBr+=dt*initial::chi(rmin+i*dr+dr/2,j*dth)
-						*gsA[i*2+1][j*2]
-						*(A[i*2+1][j*2+1]-A[i*2+1][j*2-1])
-						/dr/dth;
-#endif
 #endif
 					dBr+=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
 				}
@@ -330,18 +304,22 @@ simulate ( )
 					dBth+=hall_thflux[i][j]
 						*(B[i][j+1]+B[i][j])
 						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
-#ifndef TOROIDAL
-					dBth+=-dt*initial::chi(rmin+i*dr,j*dth+dth/2)
-						*gsA[i*2][j*2+1]
-						*(A[i*2+1][j*2+1]-A[i*2-1][j*2+1])
-						/dr/dth;
-#endif
 #endif
 					dBth+=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
 				}
 				Baux[i][j]+=(dBr+dBth)*sines[j];
 				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
 				Baux[i][j+1]-=dBth*sines[j+1];
+#ifndef TOROIDAL
+#ifndef PUREOHM
+				if(i!=0&&j!=0){
+					Baux[i][j]+=dt*sines[j]*(
+							(initial::chi_rderivative(r,th)*gsA[i][j]+initial::chi(r,th)*(gsA[i+1][j]-gsA[i-1][j])/2/dr)*(A[i][j+1]-A[i][j-1])/2/dth
+							-(initial::chi_thderivative(r,th)*gsA[i][j]+initial::chi(r,th)*(gsA[i][j+1]-gsA[i][j-1])/2/dth)*(A[i+1][j]-A[i-1][j])/2/dr
+							);
+				}
+#endif
+#endif
 			}
 		}
 		//pass values from auxiliary array Baux
@@ -441,7 +419,7 @@ solve_integrals ( )
 solve_A_boundary ( )
 {
 	//maximum l for the spherical harmonics expansion
-	int l=5;
+	int l=20;
 	//solve the required legendre polynomial on all required points
 	double P[l+1][2*thNum-1];
 	for(int i=0;i<=l;i++){
@@ -451,12 +429,29 @@ solve_A_boundary ( )
 	}
 	//solve integrated coefficients
 	double a[l];
+	double f0=0,f1=0,f2=0;
 	for(int i=0;i<l;i++){
 		a[i]=0;
+<<<<<<< HEAD
 		for(int j=1;j<2*thNum-2;j++){
 			a[i]+=(A[2*rNum-3][j+1]-A[2*rNum-3][j-1])*P[i+1][j]*dr/2*(i+1)*(2*i+3)/(i+2)/4*pow(1-dr/2,i+1);
+=======
+		for(int j=1;j<thNum-2;j++){
+			double th=j*dth;
+			f1=A[rNum-2][j]*(cos(j*dth)*P[i+1][j]-P[i][j])/sin(j*dth);
+			f0=f2=0;
+			if(j!=thNum-2){
+				f2=A[rNum-2][j+1]*(cos(th+dth)*P[i+1][j+1]-P[i][j+1])/sin(th+dth);
+			}
+			if(j!=1){
+				f0=A[rNum-2][j-1]*(cos(th-dth)*P[i+1][j-1]-P[i][j-1])/sin(th-dth);
+			}
+			a[i]+=(f0+4*f1+f2)*dth/3;
+>>>>>>> Use hybrid approach in evolution of B
 		}
+		a[i]=a[i]*2*(4*atan(1))*pow(1-dr,i+1)/(i+2)*sqrt((2*i+3)/4.0/4.0/atan(1))*(i+1)/2;
 	}
+<<<<<<< HEAD
 	//set boundary to A[rNum-2][j] to start summation
 	for(int j=1;j<2*thNum-2;j++){
 		A[2*rNum-2][j]=A[2*rNum-3][j];
@@ -465,8 +460,54 @@ solve_A_boundary ( )
 	for(int i=0;i<l;i++){
 		for(int j=1;j<2*thNum-2;j++){
 			A[2*rNum-2][j]+=a[i]*(cos(j*dth/2)*P[i+1][j]-P[i][j])/pow(1-dr/4,i+2);
+=======
+	for(int j=1;j<thNum-1;j++){
+		A[rNum-1][j]=0;
+	}
+	//permorm sumation
+	for(int i=0;i<l;i++){
+		for(int j=1;j<thNum-1;j++){
+			A[rNum-1][j]+=a[i]*sqrt((2*i+3)/4.0/4.0/atan(1))*(cos(j*dth)*P[i+1][j]-P[i][j]);
+>>>>>>> Use hybrid approach in evolution of B
 		}
 	}
+	//repeat proccess from the boundary
+//	for(int k=0;k<0;k++){
+//		for(int i=0;i<l;i++){
+//			a[i]=0;
+//			for(int j=1;j<thNum-2;j+=2){
+//				f1=A[rNum-1][j]*(i+1)*(cos(j*dth)*P[i+1][j]-P[i][j])/sin(j*dth);
+//				if(j==1){
+//					f0=0;
+//					f2=A[rNum-1][j+1]*(i+1)*(cos(j*dth)*P[i+1][j]-P[i][j])/sin(j*dth);
+//				}else if(j==thNum-2){
+//					f0=A[rNum-1][j-1]*(i+1)*(cos(j*dth)*P[i+1][j]-P[i][j])/sin(j*dth);
+//					f2=0;
+//				}else{
+//					f0=A[rNum-1][j-1]*(i+1)*(cos(j*dth)*P[i+1][j]-P[i][j])/sin(j*dth);
+//					f2=A[rNum-1][j+1]*(i+1)*(cos(j*dth)*P[i+1][j]-P[i][j])/sin(j*dth);
+//				}
+//				a[i]+=(f0+4*f1+f2)*dth/3;
+//			}
+//			a[i]=a[i]*2*(4*atan(1))/(i+2)*sqrt((2*i+3)/4.0/4.0/atan(1));
+//		}
+//		for(int j=1;j<thNum-1;j++){
+//			A[rNum-1][j]=0;
+//		}
+//		//permorm sumation
+//		for(int i=0;i<l;i++){
+//			for(int j=1;j<thNum-1;j++){
+//				A[rNum-1][j]+=a[i]*sqrt((2*i+3)/4.0/4.0/atan(1))*(cos(j*dth)*P[i+1][j]-P[i][j]);
+//			}
+//		}
+//	}
+//	for(int j=1;j<thNum-1;j++){
+//		std::cout<<A[rNum-1][j]/initial::A(1,j*dth)<<"#"<<A[rNum-2][j]/initial::A(1,j*dth);
+//		std::cout<<std::endl;
+//	}
+//	std::cout<<std::endl;
+//	std::cout<<a[0]<<std::endl;
+
 	return;
 }		/* -----  end of function solve_A_boundary  ----- */
 #endif
