@@ -5,10 +5,29 @@ Program to produce graphs from the output of the as_toroidal program
 import matplotlib.pyplot as plt
 from pylab import *
 import sys
+import os
 import math
 
-# First argument to program is folder with results
-folder=sys.argv[1]
+#get folder name, if not specified as argument, use the latest one
+folder=""
+if len(sys.argv)<2:
+    timestamp="0"
+    for root, dirs, files in os.walk("."):
+        for name in dirs:
+            if name[:8]=="results_" and len(name)==18:
+                newtimestamp=name[8:]
+                if newtimestamp>timestamp:
+                    folder=name
+                    timestamp=newtimestamp
+else:
+    # First argument to program is folder with results
+    folder=sys.argv[1]
+#add "/" if it is not given in folder name
+if folder[len(folder)-1]!="/":
+    folder=folder+"/"
+
+#Show what folder is being used
+print("Plotting data in "+folder)
 
 # Open parameters file
 params=open(folder+'params.dat','r')
