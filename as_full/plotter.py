@@ -119,7 +119,7 @@ while 1:
         k+=plotSteps
         continue
     except:
-        print num_file
+        pass
 
     #read A file
     data
@@ -185,6 +185,7 @@ while 1:
                 orientation='portrait', papertype=None, format=None,
                 transparent=False, bbox_inches=None, pad_inches=0.1)
     close()
+    print num_file
 
     k+=plotSteps
 

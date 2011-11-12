@@ -226,9 +226,8 @@ simulate ( )
 			double r=rmin+i*dr;
 			for(int j=1;j<thNum-1;j++){
 				double th=j*dth;
-				//gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/pow(dr,2)+1/r/r*sin(th)*((A[i][j+1]-A[i][j])/sin(th+dth/2)-(A[i][j]-A[i][j-1])/sin(th-dth/2))/dth/dth;
 				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cos(th)/sin(th)*(A[i][j+1]-A[i][j-1])/2/dth;
-				gsA[i][j]=(105.0/2.0*(-pow(r,2)+pow(r,4))*pow(sin(th),2));
+				//gsA[i][j]=(105.0/2.0*(-pow(r,2)+pow(r,4))*pow(sin(th),2));
 			}
 		}
 
@@ -296,6 +295,11 @@ simulate ( )
 					dBr+=hall_rflux[i][j]
 						*(B[i+1][j]+B[i][j])
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+#ifndef TOROIDAL
+					dBr+=dt*initial::chi(r+dr/2,th)
+						*(gsA[i+1][j]+gsA[i][j])/2
+						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])/4/dth/dr;
+#endif
 #endif
 					dBr+=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
 				}
@@ -304,22 +308,27 @@ simulate ( )
 					dBth+=hall_thflux[i][j]
 						*(B[i][j+1]+B[i][j])
 						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+#ifndef TOROIDAL
+					dBth+=-dt*initial::chi(r,th+dth/2)
+						*(gsA[i][j+1]+gsA[i][j])/2
+						*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])/4/dr/dth;
+#endif
 #endif
 					dBth+=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
 				}
 				Baux[i][j]+=(dBr+dBth)*sines[j];
 				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
 				Baux[i][j+1]-=dBth*sines[j+1];
-#ifndef TOROIDAL
-#ifndef PUREOHM
-				if(i!=0&&j!=0){
-					Baux[i][j]+=dt*sines[j]*(
-							(initial::chi_rderivative(r,th)*gsA[i][j]+initial::chi(r,th)*(gsA[i+1][j]-gsA[i-1][j])/2/dr)*(A[i][j+1]-A[i][j-1])/2/dth
-							-(initial::chi_thderivative(r,th)*gsA[i][j]+initial::chi(r,th)*(gsA[i][j+1]-gsA[i][j-1])/2/dth)*(A[i+1][j]-A[i-1][j])/2/dr
-							);
-				}
-#endif
-#endif
+//#ifndef TOROIDAL
+//#ifndef PUREOHM
+//				if(i!=0&&j!=0){
+//					Baux[i][j]+=(1-pow(r,2))*dt*sines[j]*(
+//							(initial::chi_rderivative(r,th)*gsA[i][j]+initial::chi(r,th)*(gsA[i+1][j]-gsA[i-1][j])/2/dr)*(A[i][j+1]-A[i][j-1])/2/dth
+//							-(initial::chi_thderivative(r,th)*gsA[i][j]+initial::chi(r,th)*(gsA[i][j+1]-gsA[i][j-1])/2/dth)*(A[i+1][j]-A[i-1][j])/2/dr
+//							);
+//				}
+//#endif
+//#endif
 			}
 		}
 		//pass values from auxiliary array Baux
