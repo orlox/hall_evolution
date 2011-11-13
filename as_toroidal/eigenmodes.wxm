@@ -46,7 +46,11 @@ wxplot2d([spherical_bessel_j(1,k)], [k,0,18])$
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-find_root(spherical_bessel_j(1,k),k,4,6);
+find_root(spherical_bessel_j(1,k),k,6,10);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+1/7.252518**2;
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
@@ -219,6 +223,18 @@ solve([f(h/2)=fp1,f(-h/2)=fm1,f(-3*h/2)=fm2],[f0,a,b]);
 
 /* [wxMaxima: input   start ] */
 -float(2*sqrt(%pi/3));
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+f(r,th):=a1+a2*th+a3*r+a4*th^2+a5*r*th+a6*r*th^2;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+solve([
+f(-dr/2,dth)=f1,f(dr/2,dth)=f2,
+f(-dr/2,0)=f3,f(dr/2,0)=f4,
+f(-dr/2,-dth)=f5,f(dr/2,-dth)=f6
+],[a1,a2,a3,a4,a5,a6]);
 /* [wxMaxima: input   end   ] */
 
 /* Maxima can't load/batch files which end with a comment! */

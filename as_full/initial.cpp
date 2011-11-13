@@ -58,7 +58,7 @@ A ( double r, double th )
 	double
 B ( double r, double th )
 {
-	return 0*(gsl_sf_bessel_jl(1,k*r))*r*sin(th);//+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
+	return 0*(gsl_sf_bessel_jl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);//+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 
