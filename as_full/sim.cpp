@@ -227,7 +227,7 @@ simulate ( )
 			for(int j=1;j<thNum-1;j++){
 				double th=j*dth;
 				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cos(th)/sin(th)*(A[i][j+1]-A[i][j-1])/2/dth;
-				//gsA[i][j]=(105.0/2.0*(-pow(r,2)+pow(r,4))*pow(sin(th),2));
+				gsA[i][j]=(105.0/2.0*(-pow(r,2)+pow(r,4))*pow(sin(th),2));
 			}
 		}
 
@@ -248,14 +248,16 @@ simulate ( )
 #endif
 
 		//Update toroidal field function
-		for(int i=0;i<rNum-1;i++){
+		for(int i=10;i<rNum-11;i++){
 			double r=rmin+i*dr;
-			for(int j=0;j<thNum-1;j++){
+			for(int j=3;j<thNum-4;j++){
 			double th=j*dth;
 				if(i==0&&j==0)
 					continue;
 				double dBr=0;
 				double dBth=0;
+//				double dB1=0;
+//				double dB2=0;
 				if(j!=0){
 					dBr+=thtd*initial::eta(r+dr/2,th)/sin(th)
 						*(B[i+1][j]-B[i][j])/dr;
@@ -265,8 +267,8 @@ simulate ( )
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4/dth;
 
 					dBr+=initial::chi(r+dr/2,th)
-						*(gsA[i+1][j]+gsA[i][j])/2
-						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])/4/dth;				
+						*(gsA[i][j]+gsA[i+1][j])/2
+						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])/4/dth;
 
 					dBr=dBr/dr*dt;
 				}
@@ -284,15 +286,90 @@ simulate ( )
 
 					dBth=dBth/dth*dt;
 				}
-				Baux[i][j]+=(dBr+dBth)*sines[j];
-				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
-				Baux[i][j+1]-=dBth*sines[j+1];
 //
-//				Baux[i][j]+=(dBr)*sines[j];
+//				if(i!=0&&j!=0){
+//					double a2,a3,a4,a5,a6,a7,a8,a9;
+//					double f1=A[i-1][j+1];
+//					double f2=A[i][j+1];
+//					double f3=A[i+1][j+1];
+//					double f4=A[i-1][j];
+//					double f5=A[i][j];
+//					double f6=A[i+1][j];
+//					double f7=A[i-1][j-1];
+//					double f8=A[i][j-1];
+//					double f9=A[i+1][j-1];
+//					a2=-(f4-f6)/(2*dr);
+//					a3=(f6-2*f5+f4)/(2*dr*dr);
+//					a4=(f2-f8)/(2*dth);
+//					a5=(f8-2*f5+f2)/(2*dth*dth);
+//					a6=-(f9-f7-f3+f1)/(4*dr*dth);
+//					a7=(-f9+2*f8-f7+f3-2*f2+f1)/(4*dr*dr*dth);
+//					a8=-(-f9+f7+2*f6-2*f4-f3+f1)/(4*dr*dth*dth);
+//					a9=(f9-2*f8+f7-2*f6+4*f5-2*f4+f3-2*f2+f1)/(4*dr*dr*dth*dth);
+//					int caca=8;
+//					dr=dr/caca;
+//					dth=dth/caca;
+//					int st=8;
+//					double thaux=-dth/2+dth/2/st;
+//					for(int n=0;n<st;n++){
+//						dB1+=initial::chi(r+dr/2,th+thaux)
+//							*(
+//								2*a3+2*a7*thaux+2*a9*pow(thaux,2)
+//								+1/pow(r+dr/2,2)*(2*a5+2*a8*(dr/2)+2*a9*pow(dr/2,2))
+//								-1/pow(r+dr/2,2)*cos(th+thaux)/sin(th+thaux)*(a4+2*a5*thaux+a6*(dr/2)+a7*pow(dr/2,2)+2*a8*(dr/2)*thaux+2*a9*pow(dr/2,2)*thaux)
+//							 )
+//							*(a4+2*a5*thaux+a6*(dr/2)+a7*pow(dr/2,2)+2*a8*(dr/2)*thaux+2*a9*pow(dr/2,2)*thaux)
+//							/dr/st;
+//						dB1-=initial::chi(r-dr/2,th+thaux)
+//							*(
+//								2*a3+2*a7*thaux+2*a9*pow(thaux,2)
+//								+1/pow(r-dr/2,2)*(2*a5+2*a8*(-dr/2)+2*a9*pow(-dr/2,2))
+//								-1/pow(r-dr/2,2)*cos(th+thaux)/sin(th+thaux)*(a4+2*a5*thaux+a6*(-dr/2)+a7*pow(-dr/2,2)+2*a8*(-dr/2)*thaux+2*a9*pow(-dr/2,2)*thaux)
+//							 )
+//							*(a4+2*a5*thaux+a6*(-dr/2)+a7*pow(-dr/2,2)+2*a8*(-dr/2)*thaux+2*a9*pow(-dr/2,2)*thaux)
+//							/dr/st;
+//
+//						thaux+=dth/st;
+//					}
+//					double raux=-dr/2+dr/2/st;
+//					for(int n=0;n<st;n++){
+//						dB2+=-initial::chi(r+raux,th+dth/2)*
+//							(
+//								2*a3+2*a7*(dth/2)+2*a9*pow(dth/2,2)
+//								+1/pow(r+raux,2)*(2*a5+2*a8*raux+2*a9*pow(raux,2))
+//								-1/pow(r+raux,2)*cos(th+dth/2)/sin(th+dth/2)*(a4+2*a5*(dth/2)+a6*raux+a7*pow(raux,2)+2*a8*raux*(dth/2)+2*a9*pow(raux,2)*(dth/2))
+//							 )
+//							*(a2+2*a3*raux+a6*(dth/2)+2*a7*raux*(dth/2)+a8*pow(dth/2,2)+2*a9*raux*pow(dth/2,2))
+//							/dth/st;
+//						dB2-=-initial::chi(r+raux,th-dth/2)*
+//							(
+//								2*a3+2*a7*(-dth/2)+2*a9*pow(-dth/2,2)
+//								+1/pow(r+raux,2)*(2*a5+2*a8*raux+2*a9*pow(raux,2))
+//								-1/pow(r+raux,2)*cos(th-dth/2)/sin(th-dth/2)*(a4+2*a5*(-dth/2)+a6*raux+a7*pow(raux,2)+2*a8*raux*(-dth/2)+2*a9*pow(raux,2)*(-dth/2))
+//							 )
+//							*(a2+2*a3*raux+a6*(-dth/2)+2*a7*raux*(-dth/2)+a8*pow(-dth/2,2)+2*a9*raux*pow(-dth/2,2))
+//							/dth/st;
+//
+//						raux+=dr/st;
+//					}
+//					dr=caca*dr;
+//					dth=caca*dth;
+//					
+//				}
+
+//				Baux[i][j]+=(dBr+dBth)*sines[j];
 //				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
+//				Baux[i][j+1]-=dBth*sines[j+1];
 //
-//				Aaux[i][j]+=(dBth)*sines[j];
-//				Aaux[i][j+1]-=dBth*sines[j+1];
+//				Aaux[i][j]=dBr*sines[j];
+//				Baux[i][j]=dBth*sines[j];
+
+
+				Baux[i][j]+=(dBr)*sines[j];
+				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
+
+				Aaux[i][j]+=(dBth)*sines[j];
+				Aaux[i][j+1]-=dBth*sines[j+1];
 			}
 		}
 		//pass values from auxiliary array Baux
