@@ -131,7 +131,7 @@ while 1:
     for line in data:
         values=line.split(" ")
         for value in values:
-            if j==2*thNum-1:
+            if j==thNum:
                 break
             A[i][j]=float(value)
             j+=1
