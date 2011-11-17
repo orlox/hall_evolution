@@ -248,16 +248,14 @@ simulate ( )
 #endif
 
 		//Update toroidal field function
-		for(int i=10;i<rNum-11;i++){
+		for(int i=0;i<rNum-1;i++){
 			double r=rmin+i*dr;
-			for(int j=3;j<thNum-4;j++){
+			for(int j=0;j<thNum-1;j++){
 			double th=j*dth;
 				if(i==0&&j==0)
 					continue;
 				double dBr=0;
 				double dBth=0;
-//				double dB1=0;
-//				double dB2=0;
 				if(j!=0){
 					dBr+=thtd*initial::eta(r+dr/2,th)/sin(th)
 						*(B[i+1][j]-B[i][j])/dr;
@@ -265,10 +263,6 @@ simulate ( )
 					dBr+=initial::chi(r+dr/2,th)
 						*(B[i][j]+B[i+1][j])/2
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4/dth;
-
-					dBr+=initial::chi(r+dr/2,th)
-						*(gsA[i][j]+gsA[i+1][j])/2
-						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])/4/dth;
 
 					dBr=dBr/dr*dt;
 				}
@@ -280,96 +274,45 @@ simulate ( )
 						*(B[i][j]+B[i][j+1])/2
 						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1])/4/dr;
 
-					dBth+=-initial::chi(r,th+dth/2)
-						*(gsA[i][j]+gsA[i][j+1])/2
-						*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])/4/dr;
-
 					dBth=dBth/dth*dt;
 				}
-//
-//				if(i!=0&&j!=0){
-//					double a2,a3,a4,a5,a6,a7,a8,a9;
-//					double f1=A[i-1][j+1];
-//					double f2=A[i][j+1];
-//					double f3=A[i+1][j+1];
-//					double f4=A[i-1][j];
-//					double f5=A[i][j];
-//					double f6=A[i+1][j];
-//					double f7=A[i-1][j-1];
-//					double f8=A[i][j-1];
-//					double f9=A[i+1][j-1];
-//					a2=-(f4-f6)/(2*dr);
-//					a3=(f6-2*f5+f4)/(2*dr*dr);
-//					a4=(f2-f8)/(2*dth);
-//					a5=(f8-2*f5+f2)/(2*dth*dth);
-//					a6=-(f9-f7-f3+f1)/(4*dr*dth);
-//					a7=(-f9+2*f8-f7+f3-2*f2+f1)/(4*dr*dr*dth);
-//					a8=-(-f9+f7+2*f6-2*f4-f3+f1)/(4*dr*dth*dth);
-//					a9=(f9-2*f8+f7-2*f6+4*f5-2*f4+f3-2*f2+f1)/(4*dr*dr*dth*dth);
-//					int caca=8;
-//					dr=dr/caca;
-//					dth=dth/caca;
-//					int st=8;
-//					double thaux=-dth/2+dth/2/st;
-//					for(int n=0;n<st;n++){
-//						dB1+=initial::chi(r+dr/2,th+thaux)
-//							*(
-//								2*a3+2*a7*thaux+2*a9*pow(thaux,2)
-//								+1/pow(r+dr/2,2)*(2*a5+2*a8*(dr/2)+2*a9*pow(dr/2,2))
-//								-1/pow(r+dr/2,2)*cos(th+thaux)/sin(th+thaux)*(a4+2*a5*thaux+a6*(dr/2)+a7*pow(dr/2,2)+2*a8*(dr/2)*thaux+2*a9*pow(dr/2,2)*thaux)
-//							 )
-//							*(a4+2*a5*thaux+a6*(dr/2)+a7*pow(dr/2,2)+2*a8*(dr/2)*thaux+2*a9*pow(dr/2,2)*thaux)
-//							/dr/st;
-//						dB1-=initial::chi(r-dr/2,th+thaux)
-//							*(
-//								2*a3+2*a7*thaux+2*a9*pow(thaux,2)
-//								+1/pow(r-dr/2,2)*(2*a5+2*a8*(-dr/2)+2*a9*pow(-dr/2,2))
-//								-1/pow(r-dr/2,2)*cos(th+thaux)/sin(th+thaux)*(a4+2*a5*thaux+a6*(-dr/2)+a7*pow(-dr/2,2)+2*a8*(-dr/2)*thaux+2*a9*pow(-dr/2,2)*thaux)
-//							 )
-//							*(a4+2*a5*thaux+a6*(-dr/2)+a7*pow(-dr/2,2)+2*a8*(-dr/2)*thaux+2*a9*pow(-dr/2,2)*thaux)
-//							/dr/st;
-//
-//						thaux+=dth/st;
-//					}
-//					double raux=-dr/2+dr/2/st;
-//					for(int n=0;n<st;n++){
-//						dB2+=-initial::chi(r+raux,th+dth/2)*
-//							(
-//								2*a3+2*a7*(dth/2)+2*a9*pow(dth/2,2)
-//								+1/pow(r+raux,2)*(2*a5+2*a8*raux+2*a9*pow(raux,2))
-//								-1/pow(r+raux,2)*cos(th+dth/2)/sin(th+dth/2)*(a4+2*a5*(dth/2)+a6*raux+a7*pow(raux,2)+2*a8*raux*(dth/2)+2*a9*pow(raux,2)*(dth/2))
-//							 )
-//							*(a2+2*a3*raux+a6*(dth/2)+2*a7*raux*(dth/2)+a8*pow(dth/2,2)+2*a9*raux*pow(dth/2,2))
-//							/dth/st;
-//						dB2-=-initial::chi(r+raux,th-dth/2)*
-//							(
-//								2*a3+2*a7*(-dth/2)+2*a9*pow(-dth/2,2)
-//								+1/pow(r+raux,2)*(2*a5+2*a8*raux+2*a9*pow(raux,2))
-//								-1/pow(r+raux,2)*cos(th-dth/2)/sin(th-dth/2)*(a4+2*a5*(-dth/2)+a6*raux+a7*pow(raux,2)+2*a8*raux*(-dth/2)+2*a9*pow(raux,2)*(-dth/2))
-//							 )
-//							*(a2+2*a3*raux+a6*(-dth/2)+2*a7*raux*(-dth/2)+a8*pow(-dth/2,2)+2*a9*raux*pow(-dth/2,2))
-//							/dth/st;
-//
-//						raux+=dr/st;
-//					}
-//					dr=caca*dr;
-//					dth=caca*dth;
-//					
-//				}
+				double dB1=0;
+				double dB2=0;
+				double factor=20;
+				if(i!=0&&j!=0){
+					dB1+=initial::chi(r+dr/(factor+1),th)
+						*(factor*gsA[i][j]+gsA[i+1][j])/(factor+1)
+						*(factor*(A[i][j+1]-A[i][j-1])/2+(A[i+1][j+1]-A[i+1][j-1])/2)/(factor+1)/dth;
+					dB1-=initial::chi(r-dr/(factor+1),th)
+						*(gsA[i-1][j]+factor*gsA[i][j])/(factor+1)
+						*((A[i-1][j+1]-A[i-1][j-1])/2+factor*(A[i][j+1]-A[i][j-1])/2)/(factor+1)/dth;
+					dB1=dB1/dr/2*(factor+1)*dt;
 
-//				Baux[i][j]+=(dBr+dBth)*sines[j];
-//				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
-//				Baux[i][j+1]-=dBth*sines[j+1];
+					dB2+=-initial::chi(r,th+dth/(factor+1))
+						*(factor*gsA[i][j]+gsA[i][j+1])/(factor+1)
+						*(factor*(A[i+1][j]-A[i-1][j])/2+(A[i+1][j+1]-A[i-1][j+1])/2)/(factor+1)/dr;
+
+					dB2-=-initial::chi(r,th-dth/(factor+1))
+						*(gsA[i][j-1]+factor*gsA[i][j])/(factor+1)
+						*((A[i+1][j-1]-A[i-1][j-1])/2+factor*(A[i+1][j]-A[i-1][j])/2)/(factor+1)/dr;
+
+					dB2=dB2/dth/2*(factor+1)*dt;
+				}
+
+				Baux[i][j]+=(dBr+dBth+dB1+dB2)*sines[j];
+				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
+				Baux[i][j+1]-=dBth*sines[j+1];
+
 //
 //				Aaux[i][j]=dBr*sines[j];
 //				Baux[i][j]=dBth*sines[j];
 
 
-				Baux[i][j]+=(dBr)*sines[j];
-				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
-
-				Aaux[i][j]+=(dBth)*sines[j];
-				Aaux[i][j+1]-=dBth*sines[j+1];
+//				Baux[i][j]+=(dBr)*sines[j];
+//				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
+//
+//				Aaux[i][j]+=(dBth)*sines[j];
+//				Aaux[i][j+1]-=dBth*sines[j+1];
 			}
 		}
 		//pass values from auxiliary array Baux
@@ -394,11 +337,56 @@ simulate ( )
 				A[i][j]=Aaux[i][j];
 			}
 		}
+
+		//fix missing B values
+		int rless=rNum*0.1;
+		int thless=thNum*0.1;
+		double a1,a2;
+		double f1,f2;
+		for(int i=0;i<rNum;i++){
+			f1=B[i][thless+1];
+			f2=B[i][thless+2];
+			a1=((f1-f2)*pow(thless,2)+(4*f1-2*f2)*thless-f2+4*f1)/dth/(pow(thless,2)+3*thless+2);
+			a2=-((f1-f2)*thless-f2+2*f1)/pow(dth,2)/(pow(thless,2)+3*thless+2);
+			for(int n=1;n<=rless;n++){
+				double th=n*dth;
+				B[i][n]=a1*th+a2*pow(th,2);
+			}
+			f1=B[i][thNum-1-thless-1];
+			f2=B[i][thNum-1-thless-2];
+			a1=-((f1-f2)*pow(thless,2)+(4*f1-2*f2)*thless-f2+4*f1)/dth/(pow(thless,2)+3*thless+2);
+			a2=-((f1-f2)*thless-f2+2*f1)/pow(dth,2)/(pow(thless,2)+3*thless+2);
+			for(int n=1;n<=rless;n++){
+				double th=-n*dth;
+				B[i][thNum-1-n]=a1*th+a2*pow(th,2);
+			}
+		}
+		for(int j=0;j<thNum;j++){
+			f1=B[rless+1][j];
+			f2=B[rless+2][j];
+			a1=((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
+			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
+			for(int n=1;n<=rless;n++){
+				double r=n*dr;
+				B[n][j]=a1*r+a2*pow(r,2);
+			}
+			f1=B[rNum-1-rless-1][j];
+			f2=B[rNum-1-rless-2][j];
+			a1=-((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
+			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
+			for(int n=1;n<=rless;n++){
+				double r=-n*dr;
+				B[rNum-1-n][j]=a1*r+a2*pow(r,2);
+			}
+		}
 #ifndef TOROIDAL
 #ifndef SIMPLE
 		solve_A_boundary();
 #endif
 #endif
+//		for(int j=0;j<thNum;j++){
+//			A[rNum-2][j]=(A[rNum-1][j]+A[rNum-3][j])/2;
+//		}
 	}
 
 	//Close file where integrated quantities are logged
@@ -469,7 +457,7 @@ solve_integrals ( )
 solve_A_boundary ( )
 {
 	//maximum l for the spherical harmonics expansion
-	int l=5;
+	int l=10;
 	//solve the required legendre polynomial on all required points
 	double P[l+1][2*thNum-1];
 	for(int i=0;i<=l;i++){

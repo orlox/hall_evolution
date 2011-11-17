@@ -82,7 +82,7 @@ n ( double r, double th )
 	double
 eta ( double r, double th )
 {
-	return 1;
+	return 1;///n(r,th);
 }		/* -----  end of function eta  ----- */
 
 #ifndef PUREOHM
