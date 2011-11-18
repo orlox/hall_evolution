@@ -339,14 +339,14 @@ simulate ( )
 //			}
 //		}
 		for(int j=0;j<thNum;j++){
-			f1=B[rless+1][j];
-			f2=B[rless+2][j];
-			a1=((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
-			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
-			for(int n=1;n<=rless;n++){
-				double r=n*dr;
-				B[n][j]=a1*r+a2*pow(r,2);
-			}
+//			f1=B[rless+1][j];
+//			f2=B[rless+2][j];
+//			a1=((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
+//			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
+//			for(int n=1;n<=rless;n++){
+//				double r=n*dr;
+//				B[n][j]=a1*r+a2*pow(r,2);
+//			}
 			f1=B[rNum-1-rless-1][j];
 			f2=B[rNum-1-rless-2][j];
 			a1=-((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
@@ -361,9 +361,9 @@ simulate ( )
 		solve_A_boundary();
 #endif
 #endif
-//		for(int j=0;j<thNum;j++){
-//			A[rNum-2][j]=(A[rNum-1][j]+A[rNum-3][j])/2;
-//		}
+		for(int j=0;j<thNum;j++){
+			A[rNum-2][j]=(A[rNum-1][j]+A[rNum-3][j])/2;
+		}
 	}
 
 	//Close file where integrated quantities are logged

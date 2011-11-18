@@ -23,7 +23,7 @@
 
 namespace initial{
 	//minimun radius of the shell containing the magnetic field
-	double rmin=0.5;
+	double rmin=0;
 	double k=6.572013199016351;
 	double b=-2.12506938104384;
 
@@ -40,8 +40,8 @@ namespace initial{
 A ( double r, double th )
 {
 	//test for rmin=0, with field outside the star
-	return (gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th)*r;
-	//return pow(sin(th),2)*(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15.0/8.0*pow(r,6));
+	//return (gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th)*r;
+	return pow(sin(th),2)*(35.0/8.0*pow(r,2)-21.0/4.0*pow(r,4)+15.0/8.0*pow(r,6));
 }		/* -----  end of function Ai  ----- */
 #endif
 
@@ -57,7 +57,7 @@ A ( double r, double th )
 B ( double r, double th )
 {
 	//return 5*(gsl_sf_bessel_jl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);//+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
-	return (gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
+	return 0;//(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 
