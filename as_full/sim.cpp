@@ -66,7 +66,7 @@ initial_conditions ( )
 {
 	//Initialize arrays with appropiate sizes
 #ifndef TOROIDAL
-	A=new double*[2*rNum-1];
+	A=new double*[rNum];
 #endif
 	B=new double*[rNum];
 	eta=new double*[rNum];
@@ -80,6 +80,9 @@ initial_conditions ( )
 	sines=new double[thNum];
 	for(int i=0;i<rNum;i++){
 		B[i]=new double[thNum];
+#ifndef TOROIDAL
+		A[i]=new double[thNum];
+#endif
 		eta[i]=new double[thNum];
 #ifndef PUREOHM
 		chi[i]=new double[thNum];
@@ -89,11 +92,6 @@ initial_conditions ( )
 		res_rflux[i]=new double[thNum];
 		res_thflux[i]=new double[thNum];
 	}
-#ifndef TOROIDAL
-	for(int i=0;i<2*rNum-1;i++){
-		A[i]=new double[2*thNum-1];
-	}
-#endif
 
 	//get minimun radius from the value set in initial.cpp
 	rmin=initial::rmin;
@@ -111,20 +109,14 @@ initial_conditions ( )
 			th=j*dth;
 			B[i][j]=initial::B(r,th);
 			eta[i][j]=initial::eta(r,th);
+#ifndef TOROIDAL
+			A[i][j]=initial::A(r,th);
+#endif
 #ifndef PUREOHM
 			chi[i][j]=initial::chi(r,th);
 #endif
 		}
 	}
-#ifndef TOROIDAL
-	for(int i=1;i<2*rNum-2;i++){
-		r=rmin+i*dr/2;
-		for(int j=1;j<2*thNum-2;j++){
-			th=j*dth/2;
-			A[i][j]=initial::A(r,th);
-		}
-	}
-#endif
 
 	//set boundary conditions for toroidal field
 	for(int i=0;i<rNum;i++){
@@ -134,11 +126,11 @@ initial_conditions ( )
 		B[0][j]=B[rNum-1][j]=0;
 	}
 #ifndef TOROIDAL
-	for(int i=0;i<2*rNum-1;i++){
-		A[i][0]=A[i][2*thNum-2]=0;
+	for(int i=0;i<rNum;i++){
+		A[i][0]=A[i][thNum-1]=0;
 	}
-	for(int j=0;j<2*thNum-1;j++){
-		A[0][j]=A[2*rNum-2][j]=0;
+	for(int j=0;j<thNum;j++){
+		A[0][j]=A[rNum-1][j]=0;
 	}
 #endif
 
@@ -227,7 +219,6 @@ simulate ( )
 			for(int j=1;j<thNum-1;j++){
 				double th=j*dth;
 				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cos(th)/sin(th)*(A[i][j+1]-A[i][j-1])/2/dth;
-				gsA[i][j]=(105.0/2.0*(-pow(r,2)+pow(r,4))*pow(sin(th),2));
 			}
 		}
 
@@ -235,14 +226,12 @@ simulate ( )
 		for(int i=1;i<rNum-1;i++){
 			//double r=rmin+i*dr;
 			for(int j=1;j<thNum-1;j++){
-				//double th=i*dth;
 				Aaux[i][j]=A[i][j];
 #ifndef PUREOHM
-				Aaux[i][j]=
-					 dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth*(A[i+1][j]-A[i-1][j])/2/dr
-					-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr*(A[i][j+1]-A[i][j-1])/2/dth;
+				Aaux[i][j]+= dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth*(A[i+1][j]-A[i-1][j])/2/dr
+							-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr*(A[i][j+1]-A[i][j-1])/2/dth;
 #endif
-				Aaux[i][j]+=A[i][j]+dt*thtd*eta[i][j]*gsA[i][j];
+				Aaux[i][j]+=dt*thtd*eta[i][j]*gsA[i][j];
 			}
 		}
 #endif
@@ -278,7 +267,7 @@ simulate ( )
 				}
 				double dB1=0;
 				double dB2=0;
-				double factor=20;
+				double factor=1;
 				if(i!=0&&j!=0){
 					dB1+=initial::chi(r+dr/(factor+1),th)
 						*(factor*gsA[i][j]+gsA[i+1][j])/(factor+1)
@@ -295,24 +284,12 @@ simulate ( )
 					dB2-=-initial::chi(r,th-dth/(factor+1))
 						*(gsA[i][j-1]+factor*gsA[i][j])/(factor+1)
 						*((A[i+1][j-1]-A[i-1][j-1])/2+factor*(A[i+1][j]-A[i-1][j])/2)/(factor+1)/dr;
-
 					dB2=dB2/dth/2*(factor+1)*dt;
 				}
 
 				Baux[i][j]+=(dBr+dBth+dB1+dB2)*sines[j];
 				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
 				Baux[i][j+1]-=dBth*sines[j+1];
-
-//
-//				Aaux[i][j]=dBr*sines[j];
-//				Baux[i][j]=dBth*sines[j];
-
-
-//				Baux[i][j]+=(dBr)*sines[j];
-//				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
-//
-//				Aaux[i][j]+=(dBth)*sines[j];
-//				Aaux[i][j+1]-=dBth*sines[j+1];
 			}
 		}
 		//pass values from auxiliary array Baux
@@ -327,8 +304,8 @@ simulate ( )
 			}
 		}
 		//pass values from auxiliary array Aaux
-		for(int i=1;i<2*rNum-2;i++){
-			for(int j=1;j<2*thNum-2;j++){
+		for(int i=1;i<rNum-1;i++){
+			for(int j=1;j<thNum-1;j++){
 				//check for blowups, exit program if that happens
 				if(isinf(Aaux[i][j])){
 					io::report_blowup(k,i,j);
@@ -340,27 +317,27 @@ simulate ( )
 
 		//fix missing B values
 		int rless=rNum*0.1;
-		int thless=thNum*0.1;
+//		int thless=thNum*0.1;
 		double a1,a2;
 		double f1,f2;
-		for(int i=0;i<rNum;i++){
-			f1=B[i][thless+1];
-			f2=B[i][thless+2];
-			a1=((f1-f2)*pow(thless,2)+(4*f1-2*f2)*thless-f2+4*f1)/dth/(pow(thless,2)+3*thless+2);
-			a2=-((f1-f2)*thless-f2+2*f1)/pow(dth,2)/(pow(thless,2)+3*thless+2);
-			for(int n=1;n<=rless;n++){
-				double th=n*dth;
-				B[i][n]=a1*th+a2*pow(th,2);
-			}
-			f1=B[i][thNum-1-thless-1];
-			f2=B[i][thNum-1-thless-2];
-			a1=-((f1-f2)*pow(thless,2)+(4*f1-2*f2)*thless-f2+4*f1)/dth/(pow(thless,2)+3*thless+2);
-			a2=-((f1-f2)*thless-f2+2*f1)/pow(dth,2)/(pow(thless,2)+3*thless+2);
-			for(int n=1;n<=rless;n++){
-				double th=-n*dth;
-				B[i][thNum-1-n]=a1*th+a2*pow(th,2);
-			}
-		}
+//		for(int i=0;i<rNum;i++){
+//			f1=B[i][thless+1];
+//			f2=B[i][thless+2];
+//			a1=((f1-f2)*pow(thless,2)+(4*f1-2*f2)*thless-f2+4*f1)/dth/(pow(thless,2)+3*thless+2);
+//			a2=-((f1-f2)*thless-f2+2*f1)/pow(dth,2)/(pow(thless,2)+3*thless+2);
+//			for(int n=1;n<=rless;n++){
+//				double th=n*dth;
+//				B[i][n]=a1*th+a2*pow(th,2);
+//			}
+//			f1=B[i][thNum-1-thless-1];
+//			f2=B[i][thNum-1-thless-2];
+//			a1=-((f1-f2)*pow(thless,2)+(4*f1-2*f2)*thless-f2+4*f1)/dth/(pow(thless,2)+3*thless+2);
+//			a2=-((f1-f2)*thless-f2+2*f1)/pow(dth,2)/(pow(thless,2)+3*thless+2);
+//			for(int n=1;n<=rless;n++){
+//				double th=-n*dth;
+//				B[i][thNum-1-n]=a1*th+a2*pow(th,2);
+//			}
+//		}
 		for(int j=0;j<thNum;j++){
 			f1=B[rless+1][j];
 			f2=B[rless+2][j];
@@ -432,15 +409,15 @@ solve_integrals ( )
 
 	//solve poloidal quantities
 #ifndef TOROIDAL
-	for(int i=1;i<2*rNum-2;i++){
-		r=rmin+i*dr/2;
-		for(int j=1;j<2*thNum-2;j++){
-			th=j*dth/2;
+	for(int i=1;i<rNum-1;i++){
+		r=rmin+i*dr;
+		for(int j=1;j<thNum-1;j++){
+			th=j*dth;
 			//Poloidal energy
-			integrals[2]+=pow((A[i+1][j]-A[i-1][j])/4/dr,2)/sines[j]+pow((A[i][j+1]-A[i][j-1])/4/dth,2)/r/r/sin(th);
+			integrals[2]+=pow((A[i+1][j]-A[i-1][j])/2/dr,2)/sines[j]+pow((A[i][j+1]-A[i][j-1])/2/dth,2)/r/r/sin(th);
 		}
 	}
-	integrals[2]=integrals[2]*dr*dth/4;
+	integrals[2]=integrals[2]*dr*dth;
 #endif
 	return integrals;
 }		/* -----  end of function solve_integrals  ----- */
@@ -459,10 +436,10 @@ solve_A_boundary ( )
 	//maximum l for the spherical harmonics expansion
 	int l=10;
 	//solve the required legendre polynomial on all required points
-	double P[l+1][2*thNum-1];
+	double P[l+1][thNum];
 	for(int i=0;i<=l;i++){
-		for(int j=1;j<2*thNum-2;j++){
-			P[i][j]=gsl_sf_legendre_Pl(i,cos(j*dth/2));
+		for(int j=1;j<thNum;j++){
+			P[i][j]=gsl_sf_legendre_Pl(i,cos(j*dth));
 		}
 	}
 	//solve integrated coefficients
@@ -470,10 +447,6 @@ solve_A_boundary ( )
 	double f0=0,f1=0,f2=0;
 	for(int i=0;i<l;i++){
 		a[i]=0;
-<<<<<<< HEAD
-		for(int j=1;j<2*thNum-2;j++){
-			a[i]+=(A[2*rNum-3][j+1]-A[2*rNum-3][j-1])*P[i+1][j]*dr/2*(i+1)*(2*i+3)/(i+2)/4*pow(1-dr/2,i+1);
-=======
 		for(int j=1;j<thNum-2;j++){
 			double th=j*dth;
 			f1=A[rNum-2][j]*(cos(j*dth)*P[i+1][j]-P[i][j])/sin(j*dth);
@@ -485,20 +458,9 @@ solve_A_boundary ( )
 				f0=A[rNum-2][j-1]*(cos(th-dth)*P[i+1][j-1]-P[i][j-1])/sin(th-dth);
 			}
 			a[i]+=(f0+4*f1+f2)*dth/3;
->>>>>>> Use hybrid approach in evolution of B
 		}
 		a[i]=a[i]*2*(4*atan(1))*pow(1-dr,i+1)/(i+2)*sqrt((2*i+3)/4.0/4.0/atan(1))*(i+1)/2;
 	}
-<<<<<<< HEAD
-	//set boundary to A[rNum-2][j] to start summation
-	for(int j=1;j<2*thNum-2;j++){
-		A[2*rNum-2][j]=A[2*rNum-3][j];
-	}
-	//permorm sumation
-	for(int i=0;i<l;i++){
-		for(int j=1;j<2*thNum-2;j++){
-			A[2*rNum-2][j]+=a[i]*(cos(j*dth/2)*P[i+1][j]-P[i][j])/pow(1-dr/4,i+2);
-=======
 	for(int j=1;j<thNum-1;j++){
 		A[rNum-1][j]=0;
 	}
@@ -506,7 +468,6 @@ solve_A_boundary ( )
 	for(int i=0;i<l;i++){
 		for(int j=1;j<thNum-1;j++){
 			A[rNum-1][j]+=a[i]*sqrt((2*i+3)/4.0/4.0/atan(1))*(cos(j*dth)*P[i+1][j]-P[i][j]);
->>>>>>> Use hybrid approach in evolution of B
 		}
 	}
 	return;

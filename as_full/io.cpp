@@ -239,8 +239,8 @@ log_field ( int k )
 	string filenameA=AStream.str();
 	ofstream resultsA;
 	resultsA.open(filenameA.c_str());
-	for(int i=0;i<2*sim::rNum-1;i++){
-		for(int j=0;j<2*sim::thNum-1;j++){
+	for(int i=0;i<sim::rNum;i++){
+		for(int j=0;j<sim::thNum;j++){
 			resultsA << sim::A[i][j] << " ";
 		}
 		resultsA << endl;

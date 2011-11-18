@@ -64,28 +64,8 @@ X,Y = meshgrid(x, y)
 ZA=zeros((len(x),len(y)))
 ZB=zeros((len(x),len(y)))
 
-#get place in A grid that corresponds to each place in Z grid
-gridA=zeros((len(x),len(y),2))
-i,j=0,0
-for xvalue in x :
-    for yvalue in y:
-        r=math.sqrt(xvalue**2+yvalue**2)
-        th=math.acos(yvalue/r)
-        rStep=int((r-rmin+dr/4)/dr*2)
-        thStep=int((th+dth/4)/dth*2)
-        if rStep<=0 or rStep>=2*rNum-1 or thStep==0 or thStep>=2*thNum-1:
-            gridA[i][j][0]=0
-            gridA[i][j][1]=0
-            j+=1
-            continue
-        gridA[i][j][0]=rStep
-        gridA[i][j][1]=thStep
-        j+=1
-    j=0
-    i+=1
-
-#get place in B grid that corresponds to each place in Z grid
-gridB=zeros((len(x),len(y),2))
+#get place in grid that corresponds to each place in Z grid
+grid=zeros((len(x),len(y),2))
 i,j=0,0
 for xvalue in x :
     for yvalue in y:
@@ -94,12 +74,12 @@ for xvalue in x :
         rStep=int((r-rmin+dr/2)/dr)
         thStep=int((th+dth/2)/dth)
         if rStep<=0 or rStep>=rNum or thStep==0 or thStep>=thNum:
-            gridB[i][j][0]=0
-            gridB[i][j][1]=0
+            grid[i][j][0]=0
+            grid[i][j][1]=0
             j+=1
             continue
-        gridB[i][j][0]=rStep
-        gridB[i][j][1]=thStep
+        grid[i][j][0]=rStep
+        grid[i][j][1]=thStep
         j+=1
     j=0
     i+=1
@@ -158,8 +138,8 @@ while 1:
     i,j=0,0
     for xvalue in x :
         for yvalue in y:
-            ZA[i][j]=A[gridA[i][j][0]][gridA[i][j][1]]
-            ZB[i][j]=B[gridB[i][j][0]][gridB[i][j][1]]
+            ZA[i][j]=A[grid[i][j][0]][grid[i][j][1]]
+            ZB[i][j]=B[grid[i][j][0]][grid[i][j][1]]
             j+=1
         j=0
         i+=1
