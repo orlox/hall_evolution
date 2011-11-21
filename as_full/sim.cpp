@@ -252,6 +252,9 @@ simulate ( )
 					dBr+=initial::chi(r+dr/2,th)
 						*(B[i][j]+B[i+1][j])/2
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4/dth;
+					dBr+=initial::chi(r+dr/2,th)
+						*(gsA[i][j]+gsA[i+1][j])/2
+						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])/4/dth;
 
 					dBr=dBr/dr*dt;
 				}
@@ -262,32 +265,13 @@ simulate ( )
 					dBth+=-initial::chi(r,th+dth/2)
 						*(B[i][j]+B[i][j+1])/2
 						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1])/4/dr;
+					dBth+=-initial::chi(r,th+dth/2)
+						*(gsA[i][j]+gsA[i][j+1])/2
+						*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])/4/dr;
 
 					dBth=dBth/dth*dt;
 				}
-				double dB1=0;
-				double dB2=0;
-				double factor=1;
-				if(i!=0&&j!=0){
-					dB1+=initial::chi(r+dr/(factor+1),th)
-						*(factor*gsA[i][j]+gsA[i+1][j])/(factor+1)
-						*(factor*(A[i][j+1]-A[i][j-1])/2+(A[i+1][j+1]-A[i+1][j-1])/2)/(factor+1)/dth;
-					dB1-=initial::chi(r-dr/(factor+1),th)
-						*(gsA[i-1][j]+factor*gsA[i][j])/(factor+1)
-						*((A[i-1][j+1]-A[i-1][j-1])/2+factor*(A[i][j+1]-A[i][j-1])/2)/(factor+1)/dth;
-					dB1=dB1/dr/2*(factor+1)*dt;
-
-					dB2+=-initial::chi(r,th+dth/(factor+1))
-						*(factor*gsA[i][j]+gsA[i][j+1])/(factor+1)
-						*(factor*(A[i+1][j]-A[i-1][j])/2+(A[i+1][j+1]-A[i-1][j+1])/2)/(factor+1)/dr;
-
-					dB2-=-initial::chi(r,th-dth/(factor+1))
-						*(gsA[i][j-1]+factor*gsA[i][j])/(factor+1)
-						*((A[i+1][j-1]-A[i-1][j-1])/2+factor*(A[i+1][j]-A[i-1][j])/2)/(factor+1)/dr;
-					dB2=dB2/dth/2*(factor+1)*dt;
-				}
-
-				Baux[i][j]+=(dBr+dBth+dB1+dB2)*sines[j];
+				Baux[i][j]+=(dBr+dBth)*sines[j];
 				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
 				Baux[i][j+1]-=dBth*sines[j+1];
 			}
@@ -359,11 +343,11 @@ simulate ( )
 #ifndef TOROIDAL
 #ifndef SIMPLE
 		solve_A_boundary();
+//		for(int j=0;j<thNum;j++){
+//			A[rNum-2][j]=(A[rNum-1][j]+A[rNum-3][j])/2;
+//		}
 #endif
 #endif
-		for(int j=0;j<thNum;j++){
-			A[rNum-2][j]=(A[rNum-1][j]+A[rNum-3][j])/2;
-		}
 	}
 
 	//Close file where integrated quantities are logged
