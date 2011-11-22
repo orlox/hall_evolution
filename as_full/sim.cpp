@@ -51,6 +51,15 @@ double **res_thflux;
 double *sines;
 //minimun radius of the shell containing the magnetic field.
 double rmin;
+//Number of points in the radial direction both at the surface and the inner boundary for which the values
+//will be solved by interpolation, and not direct calculation through the time evolution equation.
+int rless;
+#ifndef TOROIDAL
+#ifndef SIMPLE
+//Number of points used for the multipole fit outside the star
+int l;
+#endif
+#endif
 //size of spatial steps.
 double dr;
 double dth;
@@ -108,12 +117,8 @@ initial_conditions ( )
 		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
 			B[i][j]=initial::B(r,th);
-			eta[i][j]=initial::eta(r,th);
 #ifndef TOROIDAL
 			A[i][j]=initial::A(r,th);
-#endif
-#ifndef PUREOHM
-			chi[i][j]=initial::chi(r,th);
 #endif
 		}
 	}
@@ -152,6 +157,25 @@ initial_conditions ( )
 	void
 solve_repeated_values ( )
 {
+	//Initialize arrays with appropiate sizes
+#ifndef PUREOHM
+	chi=new double*[rNum];
+	hall_rflux=new double*[rNum];
+	hall_thflux=new double*[rNum];
+#endif
+	res_rflux=new double*[rNum];
+	res_thflux=new double*[rNum];
+	sines=new double[thNum];
+	for(int i=0;i<rNum;i++){
+#ifndef PUREOHM
+		chi[i]=new double[thNum];
+		hall_rflux[i]=new double[thNum];
+		hall_thflux[i]=new double[thNum];
+#endif
+		eta[i]=new double[thNum];
+		res_rflux[i]=new double[thNum];
+		res_thflux[i]=new double[thNum];
+	}
 	//Solve common terms involved in the calculation of the toroidal field.
 	double r,th;
 	for(int i=0;i<rNum-1;i++){
@@ -159,9 +183,11 @@ solve_repeated_values ( )
 		for(int j=0;j<thNum-1;j++){
 			th=j*dth;
 #ifndef PUREOHM
+			chi[i][j]=initial::chi(r,th);
 			hall_rflux[i][j] = dt*initial::chi(r+dr/2,th)/8.0/dr/dth;
 			hall_thflux[i][j]=-dt*initial::chi(r,th+dth/2)/8.0/dr/dth;
 #endif
+			eta[i][j]=initial::eta(r,th);
 			res_rflux[i][j]  = dt*thtd*initial::eta(r+dr/2,th)/sin(th)/dr/dr;
 			res_thflux[i][j] = dt*thtd*initial::eta(r,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
 		}
@@ -226,50 +252,47 @@ simulate ( )
 		for(int i=1;i<rNum-1;i++){
 			//double r=rmin+i*dr;
 			for(int j=1;j<thNum-1;j++){
-				Aaux[i][j]=A[i][j];
+				Aaux[i][j]=A[i][j]+dt*thtd*eta[i][j]*gsA[i][j];
 #ifndef PUREOHM
 				Aaux[i][j]+= dt*sines[j]*chi[i][j]*(B[i][j+1]-B[i][j-1])/2/dth*(A[i+1][j]-A[i-1][j])/2/dr
 							-dt*sines[j]*chi[i][j]*(B[i+1][j]-B[i-1][j])/2/dr*(A[i][j+1]-A[i][j-1])/2/dth;
 #endif
-				Aaux[i][j]+=dt*thtd*eta[i][j]*gsA[i][j];
 			}
 		}
 #endif
 
 		//Update toroidal field function
 		for(int i=0;i<rNum-1;i++){
-			double r=rmin+i*dr;
 			for(int j=0;j<thNum-1;j++){
-			double th=j*dth;
 				if(i==0&&j==0)
 					continue;
 				double dBr=0;
 				double dBth=0;
 				if(j!=0){
-					dBr+=thtd*initial::eta(r+dr/2,th)/sin(th)
-						*(B[i+1][j]-B[i][j])/dr;
-
-					dBr+=initial::chi(r+dr/2,th)
-						*(B[i][j]+B[i+1][j])/2
-						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1])/4/dth;
-					dBr+=initial::chi(r+dr/2,th)
-						*(gsA[i][j]+gsA[i+1][j])/2
-						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1])/4/dth;
-
-					dBr=dBr/dr*dt;
+					dBr+=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
+#ifndef PUREOHM
+					dBr+=hall_rflux[i][j]
+						*(B[i][j]+B[i+1][j])
+						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+#ifndef TOROIDAL
+					dBr+=hall_rflux[i][j]
+						*(gsA[i][j]+gsA[i+1][j])
+						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
+#endif
+#endif
 				}
 				if(i!=0){
-					dBth+=thtd*initial::eta(r,th+dth/2)/sin(th+dth/2)/pow(r,2)
-						*(B[i][j+1]-B[i][j])/dth;
-
-					dBth+=-initial::chi(r,th+dth/2)
-						*(B[i][j]+B[i][j+1])/2
-						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1])/4/dr;
-					dBth+=-initial::chi(r,th+dth/2)
-						*(gsA[i][j]+gsA[i][j+1])/2
-						*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1])/4/dr;
-
-					dBth=dBth/dth*dt;
+					dBth+=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
+#ifndef PUREOHM
+					dBth+=hall_thflux[i][j]
+						*(B[i][j]+B[i][j+1])
+						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+#ifndef TOROIDAL
+					dBth+=hall_thflux[i][j]
+						*(gsA[i][j]+gsA[i][j+1])
+						*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
+#endif
+#endif
 				}
 				Baux[i][j]+=(dBr+dBth)*sines[j];
 				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
@@ -287,6 +310,7 @@ simulate ( )
 				B[i][j]=Baux[i][j];
 			}
 		}
+#ifndef TOROIDAL
 		//pass values from auxiliary array Aaux
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
@@ -298,39 +322,19 @@ simulate ( )
 				A[i][j]=Aaux[i][j];
 			}
 		}
-
-		//fix missing B values
-		int rless=rNum*0.1;
-//		int thless=thNum*0.1;
+#endif
+		//solve B values close to the inner shell through 3-point interpolation
 		double a1,a2;
 		double f1,f2;
-//		for(int i=0;i<rNum;i++){
-//			f1=B[i][thless+1];
-//			f2=B[i][thless+2];
-//			a1=((f1-f2)*pow(thless,2)+(4*f1-2*f2)*thless-f2+4*f1)/dth/(pow(thless,2)+3*thless+2);
-//			a2=-((f1-f2)*thless-f2+2*f1)/pow(dth,2)/(pow(thless,2)+3*thless+2);
-//			for(int n=1;n<=rless;n++){
-//				double th=n*dth;
-//				B[i][n]=a1*th+a2*pow(th,2);
-//			}
-//			f1=B[i][thNum-1-thless-1];
-//			f2=B[i][thNum-1-thless-2];
-//			a1=-((f1-f2)*pow(thless,2)+(4*f1-2*f2)*thless-f2+4*f1)/dth/(pow(thless,2)+3*thless+2);
-//			a2=-((f1-f2)*thless-f2+2*f1)/pow(dth,2)/(pow(thless,2)+3*thless+2);
-//			for(int n=1;n<=rless;n++){
-//				double th=-n*dth;
-//				B[i][thNum-1-n]=a1*th+a2*pow(th,2);
-//			}
-//		}
-		for(int j=0;j<thNum;j++){
-//			f1=B[rless+1][j];
-//			f2=B[rless+2][j];
-//			a1=((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
-//			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
-//			for(int n=1;n<=rless;n++){
-//				double r=n*dr;
-//				B[n][j]=a1*r+a2*pow(r,2);
-//			}
+		for(int j=1;j<thNum-1;j++){
+			f1=B[rless+1][j];
+			f2=B[rless+2][j];
+			a1=((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
+			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
+			for(int n=1;n<=rless;n++){
+				double r=n*dr;
+				B[n][j]=a1*r+a2*pow(r,2);
+			}
 			f1=B[rNum-1-rless-1][j];
 			f2=B[rNum-1-rless-2][j];
 			a1=-((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
@@ -343,9 +347,6 @@ simulate ( )
 #ifndef TOROIDAL
 #ifndef SIMPLE
 		solve_A_boundary();
-//		for(int j=0;j<thNum;j++){
-//			A[rNum-2][j]=(A[rNum-1][j]+A[rNum-3][j])/2;
-//		}
 #endif
 #endif
 	}
@@ -417,8 +418,6 @@ solve_integrals ( )
 	void
 solve_A_boundary ( )
 {
-	//maximum l for the spherical harmonics expansion
-	int l=10;
 	//solve the required legendre polynomial on all required points
 	double P[l+1][thNum];
 	for(int i=0;i<=l;i++){

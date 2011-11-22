@@ -45,22 +45,51 @@ ofstream integrals_file;
 read_args ( int argc, char *argv[] )
 {
 	//Check if correct number of arguments is provided
-	if(argc!=7){
+#ifdef TOROIDAL
+	if(argc!=8)
+#else
+#ifdef SIMPLE
+	if(argc!=8)
+#else
+	if(argc!=9)
+#endif
+#endif
+	{
 		cerr<<"ERROR: Not enough arguments provided"<<endl;
 		cerr<<"usage is:"<<endl;
-		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)>"<<endl;
+		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <rless(int)>";
+#ifndef TOROIDAL
+#ifndef SIMPLE
+		cerr<<" <l(int)>";
+#endif
+#endif
+		cerr<<endl;
 		return 1;
 	}
 	//check integrity of all parameters
-	if(!io::is_integer(argv[1])||
+	if(
+			!io::is_integer(argv[1])||
 			!io::is_integer(argv[2])||
 			!io::is_float(argv[3])||
 			!io::is_integer(argv[4])||
 			!io::is_integer(argv[5])||
-			!io::is_float(argv[6])){
+			!io::is_float(argv[6])||
+			!io::is_integer(argv[7])
+#ifndef TOROIDAL
+#ifndef SIMPLE
+			||!io::is_integer(argv[8])
+#endif
+#endif
+			)
+	{
 		cerr<<"ERROR: Arguments not in the right format"<<endl;
 		cerr<<"usage is:"<<endl;
-		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)>"<<endl;
+		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <rless(int)>";
+#ifndef TOROIDAL
+#ifndef SIMPLE
+		cerr<<" <l(int)>";
+#endif
+#endif
 		return 1;
 	}
 	//store values for simulation
@@ -70,6 +99,12 @@ read_args ( int argc, char *argv[] )
 	sim::tNum=atoi(argv[4]);
 	sim::plotSteps=atoi(argv[5]);
 	sim::thtd=atof(argv[6]);
+	sim::rless=atoi(argv[7]);
+#ifndef TOROIDAL
+#ifndef SIMPLE
+	sim::l=atoi(argv[8]);
+#endif
+#endif
 	return 0;
 }		/* -----  end of function read_args  ----- */
 
@@ -141,6 +176,12 @@ create_folder ( )
 	params<< "plotSteps:"<< sim::plotSteps << std::endl;
 	params<< "rmin:"<< sim::rmin << std::endl;
 	params<< "thtd:"<< sim::thtd << std::endl;
+	params<< "rless:"<< sim::rless << std::endl;
+#ifndef TOROIDAL
+#ifndef SIMPLE
+	params<< "l:"<< sim::l << std::endl;
+#endif
+#endif
 	params.close();
 
 	return;
@@ -167,6 +208,12 @@ print_header ( )
 	cout<< "-Save output every "<< sim::plotSteps << " steps" << endl;
 	cout<< "-Minimun radius: "<< sim::rmin << endl;
 	cout<< "-Ratio of hall to dissipative timescales: "<< sim::thtd << endl;
+	cout<< "-Radial points excluded in beta calculations: "<< sim::rless << endl;
+#ifndef TOROIDAL
+#ifndef SIMPLE
+	cout<< "-Multipoles used for external field: "<< sim::l << endl;
+#endif
+#endif
 	cout<< endl;
 	cout<< "Results stored in folder results_" << timeStream.str() << endl;
 	cout<< endl;

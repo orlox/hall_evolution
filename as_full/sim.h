@@ -42,6 +42,15 @@ extern double **res_thflux;
 extern double *sines;
 //minimun radius of the shell containing the magnetic field.
 extern double rmin;
+//Number of points in the radial direction both at the surface and the inner boundary for which the values
+//will be solved by interpolation, and not direct calculation through the time evolution equation.
+extern int rless;
+#ifndef TOROIDAL
+#ifndef SIMPLE
+//Number of points used for the multipole fit outside the star
+extern int l;
+#endif
+#endif
 //size of spatial steps.
 extern double dr;
 extern double dth;
