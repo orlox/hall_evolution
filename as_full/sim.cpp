@@ -34,6 +34,7 @@ double thtd;
 double **B;
 #ifndef TOROIDAL
 double **A;
+double *a;
 #endif
 //arrays that contain the precalculated quantities neccesary to solve evolution of A.
 double **res_term_A;
@@ -76,6 +77,7 @@ initial_conditions ( )
 	//Initialize arrays with appropiate sizes
 #ifndef TOROIDAL
 	A=new double*[rNum];
+	a=new double[rNum];
 #endif
 	B=new double*[rNum];
 	for(int i=0;i<rNum;i++){
@@ -221,17 +223,12 @@ simulate ( )
 			std::cout << k << "/" << tNum << std::endl;
 		}
 #ifndef TOROIDAL
-		for(int i=1;i<rNum-1;i++){
-			double r=rmin+i*dr;
-			for(int j=1;j<thNum-1;j++){
-				double th=j*dth;
-			}
-		}
-
 		//Update poloidal field function
 		for(int i=1;i<rNum-1;i++){
+			double r=rmin+i*dr;
 			//double r=rmin+i*dr;
 			for(int j=1;j<thNum-1;j++){
+				double th=j*dth;
 				//Solve Grad-Shafranov operator at point
 				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cos(th)/sin(th)*(A[i][j+1]-A[i][j-1])/2/dth;
 				//Evolve poloidal field function at point
@@ -396,8 +393,7 @@ solve_A_boundary ( )
 		}
 	}
 	//Solve integrated coefficients. Integrations are performed using simpsons rule, which uses a quadratic function
-	//to aproximate the integrand.
-	double a[l];
+	//to aproximate the integrand (simpson's rule).
 	double f0=0,f1=0,f2=0;
 	for(int i=0;i<l;i++){
 		a[i]=0;
