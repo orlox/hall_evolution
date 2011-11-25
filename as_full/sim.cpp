@@ -23,34 +23,36 @@
 #include "initial.h"
 #include <gsl/gsl_sf.h>
 namespace sim{
-//values given as cli arguments.
+//Values given as cli arguments.
 int rNum;
 int thNum;
 double dt;
 int tNum;
 int plotSteps;
 double thtd;
-//physical values of functions defining the magnetic field.
+//Values of the function beta on the 2-d grid.
 double **B;
 #ifndef TOROIDAL
+//Values of the function alpha on the 2-d grid
 double **A;
+//Values of the coefficients that give the poloidal field outside the star.
 double *a;
 #endif
-//arrays that contain the precalculated quantities neccesary to solve evolution of A.
+//Arrays that contain the precalculated quantities neccesary to solve evolution of A.
 double **res_term_A;
 #ifndef PUREOHM
 double **hall_term_A;
 #endif
-//arrays that contain the precalculated quantities neccesary to solve fluxes for B
+//Arrays that contain the precalculated quantities neccesary to solve fluxes for B
 #ifndef PUREOHM
 double **hall_rflux;
 double **hall_thflux;
 #endif
 double **res_rflux;
 double **res_thflux;
-//sines precalculated at each point in the grid
+//Sines precalculated at each point in the grid
 double *sines;
-//minimun radius of the shell containing the magnetic field.
+//Minimun radius of the shell containing the magnetic field.
 double rmin;
 //Number of points in the radial direction both at the surface and the inner boundary for which the values
 //will be solved by interpolation, and not direct calculation through the time evolution equation.
@@ -61,9 +63,11 @@ int rless;
 int l;
 #endif
 #endif
-//size of spatial steps.
+//Size of spatial steps.
 double dr;
 double dth;
+//The value of pi
+double const Pi=4*atan(1);
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -87,15 +91,14 @@ initial_conditions ( )
 #endif
 	}
 
-	//get minimun radius from the value set in initial.cpp
+	//Get minimun radius from the value set in initial.cpp
 	rmin=initial::rmin;
 
-	//solve size of steps in the radial and angular direction
+	//Solve size of steps in the radial and angular direction
 	dr=(1.0-rmin)/(rNum-1);
-	double const Pi=4*atan(1);
 	dth=Pi/(thNum-1);
 
-	//store the initial values of physical quantities
+	//Store the initial values of physical quantities
 	double r,th;
 	for(int i=1;i<rNum-1;i++){
 		r=rmin+i*dr;
@@ -108,7 +111,7 @@ initial_conditions ( )
 		}
 	}
 
-	//set boundary conditions for toroidal field
+	//Set boundary conditions for toroidal field
 	for(int i=0;i<rNum;i++){
 		B[i][0]=B[i][thNum-1]=0;
 	}
@@ -116,7 +119,7 @@ initial_conditions ( )
 		B[0][j]=B[rNum-1][j]=0;
 	}
 #ifndef TOROIDAL
-	//set boundary condition for poloidal fields
+	//Set boundary condition for poloidal fields
 	for(int i=0;i<rNum;i++){
 		A[i][0]=A[i][thNum-1]=0;
 	}
@@ -127,7 +130,7 @@ initial_conditions ( )
 
 #ifndef TOROIDAL
 #ifndef SIMPLE
-	//adjust alpha boundary conditions to fit smoothly to a poloidal field outside the star
+	//Adjust alpha boundary conditions to fit smoothly to a poloidal field outside the star
 	solve_A_boundary();
 #endif
 #endif
@@ -209,12 +212,12 @@ simulate ( )
 	double dBr=0;
 	double dBth=0;
 	for(int k=0;k<=tNum;k++){
-		//log data if k is multiple of plotSteps
+		//Log data if k is multiple of plotSteps
 		if(k%plotSteps==0){
 			t=k*dt;
-			//log integrated quantities
+			//Log integrated quantities
 			io::log_integrals_file(t,solve_integrals());
-			//log complete profiles for A and B
+			//Log complete profiles for A and B
 			io::log_field(k);
 			//No need to keep simulating if no output will be produced in next steps
 			if(k+plotSteps>tNum){
@@ -226,7 +229,6 @@ simulate ( )
 		//Update poloidal field function
 		for(int i=1;i<rNum-1;i++){
 			double r=rmin+i*dr;
-			//double r=rmin+i*dr;
 			for(int j=1;j<thNum-1;j++){
 				double th=j*dth;
 				//Solve Grad-Shafranov operator at point
@@ -278,10 +280,10 @@ simulate ( )
 				Baux[i][j+1]-=dBth*sines[j+1];
 			}
 		}
-		//pass values from auxiliary array Baux and Aaux
+		//Pass values from auxiliary array Baux and Aaux
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
-				//check for blowups, exit program if that happens
+				//Check for blowups, exit program if that happens
 				if(isinf(Baux[i][j])
 #ifndef TOROIDAL
 						||isinf(Aaux[i][j])
@@ -296,7 +298,7 @@ simulate ( )
 #endif
 			}
 		}
-		//solve B values close to the inner shell through 3-point interpolation
+		//Solve B values close to the inner shell through 3-point interpolation
 		double a1,a2;
 		double f1,f2;
 		for(int j=1;j<thNum-1;j++){
@@ -342,34 +344,46 @@ simulate ( )
 	double*
 solve_integrals ( )
 {
-	//initialize variables
+	//Initialize array with adequate size, and set values to zero
 #ifdef TOROIDAL
 	double *integrals=new double[2];
 	integrals[0]=integrals[1]=0;
 #else
-	double *integrals=new double[3];
-	integrals[0]=integrals[1]=integrals[2]=0;
+	//When the poloidal field is considered, the individual energy of each multipole outside the star,
+	//and the sum of all the multipoles is also given.
+	double *integrals=new double[4+l];
+	for(int n=0;n<4+l;n++){
+		integrals[n]=0;
+	}
 #endif
-	double r;
 
-	//solve toroidal quantities
+	//Solve quantities integrated over the volume of the star
+	double r;
 	for(int i=1;i<rNum-1;i++){
 		r=i*dr+rmin;
 		for(int j=1;j<thNum-1;j++){
 			//Toroidal flux
 			integrals[0]+=B[i][j]/sines[j];
 			//Toroidal energy
-			integrals[1]+=pow(B[i][j],2)/r;
+			integrals[1]+=pow(B[i][j],2)/sines[j];
 #ifndef TOROIDAL
 			//Poloidal energy
 			integrals[2]+=pow((A[i+1][j]-A[i-1][j])/2/dr,2)/sines[j]+pow((A[i][j+1]-A[i][j-1])/2/dth,2)/r/r/sines[j];
 #endif
 		}
 	}
+	//Multiply by the area element on the r-th grid, and also by (2*Pi) and 1/(8*pi) the energies, where
+	//the first factor is from integration over phi, and the second one is the factor present in the calculation
+	//of the magnetic energy.
 	integrals[0]=integrals[0]*dr*dth;
-	integrals[1]=integrals[1]*dr*dth;
+	integrals[1]=integrals[1]*dr*dth/4;
 #ifndef TOROIDAL
-	integrals[2]=integrals[2]*dr*dth;
+	integrals[2]=integrals[2]*dr*dth/4;
+	//Solve external poloidal energy using the coefficients of the expansion outside the star
+	for(int n=0;n<l;n++){
+		integrals[4+n]=pow(a[n],2)*(n+2)/(8*Pi);
+		integrals[3]+=integrals[4+n];
+	}
 #endif
 	return integrals;
 }		/* -----  end of function solve_integrals  ----- */
@@ -395,29 +409,29 @@ solve_A_boundary ( )
 	//Solve integrated coefficients. Integrations are performed using simpsons rule, which uses a quadratic function
 	//to aproximate the integrand (simpson's rule).
 	double f0=0,f1=0,f2=0;
-	for(int i=0;i<l;i++){
-		a[i]=0;
+	for(int n=0;n<l;n++){
+		a[n]=0;
 		for(int j=1;j<thNum-2;j++){
 			double th=j*dth;
-			f1=A[rNum-2][j]*(cos(j*dth)*P[i+1][j]-P[i][j])/sin(j*dth);
+			f1=A[rNum-2][j]*(cos(j*dth)*P[n+1][j]-P[n][j])/sin(j*dth);
 			f0=f2=0;
 			if(j!=thNum-2){
-				f2=A[rNum-2][j+1]*(cos(th+dth)*P[i+1][j+1]-P[i][j+1])/sin(th+dth);
+				f2=A[rNum-2][j+1]*(cos(th+dth)*P[n+1][j+1]-P[n][j+1])/sin(th+dth);
 			}
 			if(j!=1){
-				f0=A[rNum-2][j-1]*(cos(th-dth)*P[i+1][j-1]-P[i][j-1])/sin(th-dth);
+				f0=A[rNum-2][j-1]*(cos(th-dth)*P[n+1][j-1]-P[n][j-1])/sin(th-dth);
 			}
-			a[i]+=(f0+4*f1+f2)*dth/3;
+			a[n]+=(f0+4*f1+f2)*dth/3;
 		}
-		a[i]=a[i]*2*(4*atan(1))*pow(1-dr,i+1)/(i+2)*sqrt((2*i+3)/4.0/4.0/atan(1))*(i+1)/2;
+		a[n]=a[n]*2*Pi*pow(1-dr,n+1)/(n+2)*sqrt((2*n+3)/4.0/Pi)*(n+1)/2;
 	}
 	for(int j=1;j<thNum-1;j++){
 		A[rNum-1][j]=0;
 	}
-	//permorm sumation
-	for(int i=0;i<l;i++){
+	//Permorm sumation
+	for(int n=0;n<l;n++){
 		for(int j=1;j<thNum-1;j++){
-			A[rNum-1][j]+=a[i]*sqrt((2*i+3)/4.0/4.0/atan(1))*(cos(j*dth)*P[i+1][j]-P[i][j]);
+			A[rNum-1][j]+=a[n]*sqrt((2*n+3)/4.0/Pi)*(cos(j*dth)*P[n+1][j]-P[n][j]);
 		}
 	}
 	return;
