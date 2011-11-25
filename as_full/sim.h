@@ -30,16 +30,6 @@ extern double **B;
 #ifndef TOROIDAL
 extern double **A;
 #endif
-//physical values that describe the structure of the star.
-extern double **chi;
-extern double **eta;
-//arrays that contains the precalculated quantities neccesary to solve fluxes for B
-extern double **hall_rflux;
-extern double **hall_thflux;
-extern double **res_rflux;
-extern double **res_thflux;
-//sines precalculated at each point in the grid
-extern double *sines;
 //minimun radius of the shell containing the magnetic field.
 extern double rmin;
 //Number of points in the radial direction both at the surface and the inner boundary for which the values
