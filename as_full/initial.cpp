@@ -36,7 +36,7 @@ namespace initial{
 	double
 A ( double r, double th )
 {
-	return (-480.0/47*(pow(r,4)/10-pow(r,2)/6)-17.0/94/r)*pow(sin(th),2);
+	return 0.1*(-480.0/47*(pow(r,4)/10-pow(r,2)/6)-17.0/94/r)*pow(sin(th),2);
 }		/* -----  end of function Ai  ----- */
 #endif
 
@@ -53,7 +53,7 @@ B ( double r, double th )
 {
 	double k=6.572013199016351;
 	double b=-2.12506938104384;
-	return (gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
+	return 3*(gsl_sf_bessel_jl(1,k*r)+b*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*r*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 

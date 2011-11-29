@@ -81,7 +81,7 @@ initial_conditions ( )
 	//Initialize arrays with appropiate sizes
 #ifndef TOROIDAL
 	A=new double*[rNum];
-	a=new double[rNum];
+	a=new double[l];
 #endif
 	B=new double*[rNum];
 	for(int i=0;i<rNum;i++){
