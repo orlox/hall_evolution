@@ -61,11 +61,16 @@ int rless;
 int l;
 //Values of the coefficients that give the poloidal field outside the star.
 double *a;
+//Repeated l dependent values in the resolution of the multipole fit.
+double *boundary_factors;
+//Repeated l and th dependent values that are solved in term of combinations Legendre polynomials.
+double **legendre_comb;
+//Auxiliary variables used in function sim::solve_A_boundary to integrate the multipole coefficients
+double f0,f1,f2;
 #endif
 #endif
 //Size of spatial steps.
-double dr;
-double dth;
+double dr,dth;
 //The value of pi
 double const Pi=4*atan(1);
 //value of radius and theta in a point of the grid, used multiple times
@@ -131,6 +136,9 @@ initial_conditions ( )
 	}
 #endif
 
+	//Solve common values repeated multiple times during the simulation
+	solve_repeated_values();
+
 #ifndef TOROIDAL
 #ifndef SIMPLE
 	//Adjust alpha boundary conditions to fit smoothly to a poloidal field outside the star
@@ -189,6 +197,21 @@ solve_repeated_values ( )
 			res_thflux[i][j] = dt*thtd*initial::eta(r,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
 		}
 	}
+	//Solve common terms involved in resolution of the multipole fit outside the star
+#ifndef TOROIDAL
+#ifndef SIMPLE
+	boundary_factors=new double[l];
+	legendre_comb=new double*[l];
+	for(int n=0;n<l;n++){
+		boundary_factors[n]=dth/12*(2*n+3)*(n+1)/(n+2)*pow(1-dr,n+1);
+		legendre_comb[n]=new double[thNum];
+		for(int j=1;j<thNum-1;j++){
+			th=j*dth;
+			legendre_comb[n][j]=(cos(th)*gsl_sf_legendre_Pl(n+1,cos(th))-gsl_sf_legendre_Pl(n,cos(th)))/sin(th);
+		}
+	}
+#endif
+#endif
 	return;
 }		/* -----  end of function solve_repeated_values  ----- */
 
@@ -389,8 +412,10 @@ solve_integrals ( )
 	integrals[2]=integrals[2]*dr*dth/4;
 #ifndef SIMPLE
 	//Solve external poloidal energy using the coefficients of the expansion outside the star
+	//the coefficients "a" are missing some terms to represent the ones used in the notes
 	for(int n=0;n<l;n++){
-		integrals[4+n]=pow(a[n],2)*(n+2)/(8*Pi);
+		//integrals[4+n]=pow(a[n],2)*(n+2)/(8*Pi);
+		integrals[4+n]=pow(a[n]*dth/3*2*Pi*pow(1-dr,n+1)/(n+2)*sqrt((2*n+3)/4.0/Pi)*(n+1)/2,2)*(n+2)/(8*Pi);
 		integrals[3]+=integrals[4+n];
 	}
 #endif
@@ -409,31 +434,27 @@ solve_integrals ( )
 	void
 solve_A_boundary ( )
 {
-	//Solve the required legendre polynomial on all required points
-	double P[l+1][thNum];
-	for(int i=0;i<=l;i++){
-		for(int j=1;j<thNum;j++){
-			P[i][j]=gsl_sf_legendre_Pl(i,cos(j*dth));
-		}
-	}
 	//Solve integrated coefficients. Integrations are performed using simpsons rule, which uses a quadratic function
 	//to aproximate the integrand (simpson's rule).
-	double f0=0,f1=0,f2=0;
 	for(int n=0;n<l;n++){
 		a[n]=0;
 		for(int j=1;j<thNum-2;j++){
-			th=j*dth;
-			f1=A[rNum-2][j]*(cos(j*dth)*P[n+1][j]-P[n][j])/sin(j*dth);
+			//th=j*dth;
+			//f1=A[rNum-2][j]*(cos(j*dth)*P[n+1][j]-P[n][j])/sin(j*dth);
+			f1=A[rNum-2][j]*legendre_comb[n][j];
 			f0=f2=0;
 			if(j!=thNum-2){
-				f2=A[rNum-2][j+1]*(cos(th+dth)*P[n+1][j+1]-P[n][j+1])/sin(th+dth);
+				//f2=A[rNum-2][j+1]*(cos(th+dth)*P[n+1][j+1]-P[n][j+1])/sin(th+dth);
+				f2=A[rNum-2][j+1]*legendre_comb[n][j+1];
 			}
 			if(j!=1){
-				f0=A[rNum-2][j-1]*(cos(th-dth)*P[n+1][j-1]-P[n][j-1])/sin(th-dth);
+				//f0=A[rNum-2][j-1]*(cos(th-dth)*P[n+1][j-1]-P[n][j-1])/sin(th-dth);
+				f0=A[rNum-2][j-1]*legendre_comb[n][j-1];
 			}
-			a[n]+=(f0+4*f1+f2)*dth/3;
+			//a[n]+=(f0+4*f1+f2)*dth/3;
+			a[n]+=(f0+4*f1+f2);
 		}
-		a[n]=a[n]*2*Pi*pow(1-dr,n+1)/(n+2)*sqrt((2*n+3)/4.0/Pi)*(n+1)/2;
+		//a[n]=a[n]*2*Pi*pow(1-dr,n+1)/(n+2)*sqrt((2*n+3)/4.0/Pi)*(n+1)/2;
 	}
 	for(int j=1;j<thNum-1;j++){
 		A[rNum-1][j]=0;
@@ -441,7 +462,8 @@ solve_A_boundary ( )
 	//Permorm sumation
 	for(int n=0;n<l;n++){
 		for(int j=1;j<thNum-1;j++){
-			A[rNum-1][j]+=a[n]*sqrt((2*n+3)/4.0/Pi)*(cos(j*dth)*P[n+1][j]-P[n][j]);
+			//A[rNum-1][j]+=a[n]*sqrt((2*n+3)/4.0/Pi)*(cos(j*dth)*P[n+1][j]-P[n][j]);
+			A[rNum-1][j]+=a[n]*boundary_factors[n]*legendre_comb[n][j]*sines[j];
 		}
 	}
 	return;
@@ -452,11 +474,13 @@ solve_A_boundary ( )
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  release_memory
- *  Description:  Destroy all used pointers to assure there are no memory leaks
+ *  Description:  Destroy all used pointers to assure there are no memory leaks. The integer
+ *  argument is used to specify the context in which the memory is released (abnormal
+ *  termination, or normal one).
  * =====================================================================================
  */
 	void
-release_memory ( )
+release_memory ( int info )
 {
 	for(int i=0;i<rNum;i++){
 		delete[] B[i];
@@ -506,8 +530,17 @@ release_memory ( )
 #ifndef SIMPLE
 	delete[] a;
 	a=NULL;
+	delete[] boundary_factors;
+	boundary_factors=NULL;
+	for(int n=0;n<l;n++){
+		delete[] legendre_comb[n];
+		legendre_comb[n]=NULL;
+	}
+	delete[] legendre_comb;
+	legendre_comb=NULL;
 #endif
 #endif
+	io::report_completion(info);
 }		/* -----  end of function release_memory  ----- */
 
 }		/* -----  end of namespace sim  ----- */

@@ -22,6 +22,7 @@
 #include	<string>
 #include	<time.h>
 #include	<stdlib.h>
+#include	<signal.h>
 #include	"string.h"
 #include	"io.h"
 #include	"sim.h"
@@ -343,5 +344,26 @@ report_blowup ( int k, int i, int j )
 	cerr << "Blew up at step " << k << "in place " << i << "," << j << endl; 
 	return;
 }		/* -----  end of function report_blowup  ----- */
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  report_completion
+ *  Description:  Report information on the completion of the program. This could be just
+ *  due to the end of the simulation, numerical blowups, or ctrl+c.
+ * =====================================================================================
+ */
+	void
+report_completion ( int info )
+{
+	if(info==SIGINT){
+		cout<<"Interrupt signal captured!"<<endl;
+	}else if(info==SIGUSR1){
+		cout<<"Couldn't complete simulation!"<<endl;
+	}else if(info==SIGUSR2){
+		cout<<"Simulation completed normally"<<endl;
+	}
+	exit(info);
+	return;
+}		/* -----  end of function report_completion  ----- */
 
 }		/* -----  end of namespace io  ----- */

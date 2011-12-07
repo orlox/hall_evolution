@@ -18,6 +18,7 @@
 
 #include	"io.h"
 #include	"sim.h"
+#include <signal.h>
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -35,8 +36,8 @@ main ( int argc, char *argv[] )
 	//set up the initial conditions
 	sim::initial_conditions();
 
-	//solve many values which are repeated at each point of the grid at all timesteps
-	sim::solve_repeated_values();
+	//capture ctrl+c to avoid memory leaks
+	signal(SIGINT, sim::release_memory);
 
 	//create folder where results will be logged
 	io::create_folder();
@@ -47,11 +48,11 @@ main ( int argc, char *argv[] )
 	//perform the simulation. If it fails, exit with error code 2!
 	if(sim::simulate()){
 		//release memory
-		sim::release_memory();
+		sim::release_memory(SIGUSR1);
 		return 2;
 	}
 	//release memory
-	sim::release_memory();
+	sim::release_memory(SIGUSR2);
 
 	//terminate program with exit code 0 (yay!)
 	return 0;

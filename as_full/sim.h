@@ -55,6 +55,6 @@ double* solve_integrals();
 //function that solves integrated quantities
 void solve_A_boundary();
 //function releases memory when simulation is done
-void release_memory();
+void release_memory(int signal);
 }
 #endif
