@@ -67,7 +67,7 @@ read_args ( int argc, char *argv[] )
 		cerr<<endl;
 		return 1;
 	}
-	//check integrity of all parameters
+	//Check integrity of all parameters
 	if(
 			!io::is_integer(argv[1])||
 			!io::is_integer(argv[2])||
@@ -93,7 +93,7 @@ read_args ( int argc, char *argv[] )
 #endif
 		return 1;
 	}
-	//store values for simulation
+	//Store values for simulation
 	sim::rNum=atoi(argv[1]);
 	sim::thNum=atoi(argv[2]);
 	sim::dt=atof(argv[3]);
@@ -118,7 +118,7 @@ read_args ( int argc, char *argv[] )
 	int
 is_integer ( char *value )
 {
-	//check that each individual character is an integer and return 0 if one is not
+	//Check that each individual character is an integer and return 0 if one is not
 	for (unsigned int i=0;i<strlen(value);i++)
 	{
 		if (!isdigit(value[i]))
@@ -137,8 +137,8 @@ is_integer ( char *value )
 	int
 is_float ( char *value )
 {
-	//check that each individual character is an integer and return 0 if one is not.
-	//Also accepts a single point.
+	//Check that each individual character is an integer and return 0 if one is not.
+	//Also, it accepts a single point.
 	int points=0;
 	for (unsigned int i=0;i<strlen(value);i++)
 	{
@@ -155,35 +155,62 @@ is_float ( char *value )
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  create_folder
- *  Description:  Creates folder using as a distinct id the current timestamp. It also creates the file params.dat which stores the simulation parameters
+ *  Description:  Creates folder using as a distinct id the current timestamp. It also creates the file params.dat which stores the simulation parameters,
+ *  and appends a line with info to the file results_summary
  * =====================================================================================
  */
 	void
 create_folder ( )
 {
-	//store timestamp, will be needed also later to access folder
+	//Store timestamp, will be needed also later to access folder
 	timeStream << time(0);
-	//create directory. THIS WONT WORK ON WINDOWS!!
+	//Create directory. THIS WONT WORK ON WINDOWS!!
 	string mkdir="mkdir results_"+timeStream.str();
 	system(mkdir.c_str());
-	//create params.dat file, where simulation parameters are logged
+	//Create params.dat file, where simulation parameters are logged
 	ofstream params;
 	string filename="results_"+timeStream.str()+"/params.dat";
 	params.open(filename.c_str());
-	params<< "rNum:"<< sim::rNum << std::endl;
-	params<< "thNum:"<< sim::thNum << std::endl;
-	params<< "dt:"<< sim::dt << std::endl;
-	params<< "tNum:"<< sim::tNum << std::endl;
-	params<< "plotSteps:"<< sim::plotSteps << std::endl;
-	params<< "rmin:"<< sim::rmin << std::endl;
-	params<< "thtd:"<< sim::thtd << std::endl;
-	params<< "rless:"<< sim::rless << std::endl;
+	params << "rNum:"<< sim::rNum << std::endl;
+	params << "thNum:"<< sim::thNum << std::endl;
+	params << "dt:"<< sim::dt << std::endl;
+	params << "tNum:"<< sim::tNum << std::endl;
+	params << "plotSteps:"<< sim::plotSteps << std::endl;
+	params << "rmin:"<< sim::rmin << std::endl;
+	params << "thtd:"<< sim::thtd << std::endl;
+	params << "rless:"<< sim::rless << std::endl;
 #ifndef TOROIDAL
 #ifndef SIMPLE
-	params<< "l:"<< sim::l << std::endl;
+	params << "l:"<< sim::l << std::endl;
 #endif
 #endif
 	params.close();
+
+	//Append line with summary to results_summary
+	ofstream summary ("results_summary",ios::app);
+	summary << "results_" << timeStream.str() << ": ";
+	summary << sim::rNum << "x" << sim::thNum << "x" << sim::dt << ", ";
+	summary << "thtd:" << sim::thtd << ", ";
+	summary << "rmin:" << sim::rmin << ", ";
+	summary << "rless:" << sim::rless << ", ";
+#ifndef TOROIDAL
+#ifndef SIMPLE
+	summary << "l:" << sim::rless << ", ";
+#endif
+#endif
+	//Specify compiler build options, T=TOROIDAL, O=PUREOHM, S=SIMPLE
+	summary << "COMP_OPT: ";
+#ifdef TOROIDAL
+	summary << "T";
+#endif
+#ifdef PUREOHM
+	summary << "O";
+#endif
+#ifdef SIMPLE
+	summary << "S";
+#endif
+	summary << "." << endl;
+	summary.close();
 
 	return;
 }		/* -----  end of function create_folder  ----- */
@@ -197,28 +224,28 @@ create_folder ( )
 	void
 print_header ( )
 {
-	cout<< endl;
-	cout<< "#################################################"<< endl;
-	cout<< "##########Axisymmetric Hall Evolution############"<< endl;
-	cout<< "#################################################"<< endl;
-	cout<< "PARAMETERS CHOSEN:"<< endl;
-	cout<< "-Number of Radial steps: "<< sim::rNum << endl;
-	cout<< "-Number of Angular steps: "<< sim::thNum << endl;
-	cout<< "-Size of timestep: "<< sim::dt << endl;
-	cout<< "-Number of Time steps: "<< sim::tNum << endl;
-	cout<< "-Save output every "<< sim::plotSteps << " steps" << endl;
-	cout<< "-Minimun radius: "<< sim::rmin << endl;
-	cout<< "-Ratio of hall to dissipative timescales: "<< sim::thtd << endl;
-	cout<< "-Radial points excluded in beta calculations: "<< sim::rless << endl;
+	cout << endl;
+	cout << "#################################################"<< endl;
+	cout << "##########Axisymmetric Hall Evolution############"<< endl;
+	cout << "#################################################"<< endl;
+	cout << "PARAMETERS CHOSEN:"<< endl;
+	cout << "-Number of Radial steps: "<< sim::rNum << endl;
+	cout << "-Number of Angular steps: "<< sim::thNum << endl;
+	cout << "-Size of timestep: "<< sim::dt << endl;
+	cout << "-Number of Time steps: "<< sim::tNum << endl;
+	cout << "-Save output every "<< sim::plotSteps << " steps" << endl;
+	cout << "-Minimun radius: "<< sim::rmin << endl;
+	cout << "-Ratio of hall to dissipative timescales: "<< sim::thtd << endl;
+	cout << "-Radial points excluded in beta calculations: "<< sim::rless << endl;
 #ifndef TOROIDAL
 #ifndef SIMPLE
-	cout<< "-Multipoles used for external field: "<< sim::l << endl;
+	cout << "-Multipoles used for external field: "<< sim::l << endl;
 #endif
 #endif
-	cout<< endl;
-	cout<< "Results stored in folder results_" << timeStream.str() << endl;
-	cout<< endl;
-	cout<< "Beggining simulation" << endl;
+	cout << endl;
+	cout << "Results stored in folder results_" << timeStream.str() << endl;
+	cout << endl;
+	cout << "Beggining simulation" << endl;
 	return;
 }		/* -----  end of function print_header  ----- */
 
@@ -262,7 +289,7 @@ log_integrals_file ( double t, double *integrals )
 #else
 	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2];
 #ifndef SIMPLE
-	//log data of poloidal energy outside the star
+	//Log data of poloidal energy outside the star
 	integrals_file << " " << integrals[3];
 	for(int n=1;n<=sim::l;n++){
 		integrals_file << " " << integrals[3+n];
@@ -270,7 +297,7 @@ log_integrals_file ( double t, double *integrals )
 #endif
 	integrals_file << endl;
 #endif
-	//release memory
+	//Release memory
 	delete[] integrals;
 	integrals=NULL;
 	return;
@@ -299,7 +326,7 @@ close_integrals_file ( )
 log_field ( int k )
 {
 #ifndef TOROIDAL
-	//construct filename for alpha log file, and open it
+	//Construct filename for alpha log file, and open it
 	stringstream AStream;
 	AStream << "results_" << timeStream.str() << "/A_" << k;
 	string filenameA=AStream.str();
@@ -313,7 +340,7 @@ log_field ( int k )
 	}
 	resultsA.close();
 #endif
-	//construct filename for alpha log file, and open it
+	//Construct filename for alpha log file, and open it
 	stringstream BStream;
 	BStream << "results_" << timeStream.str() << "/B_" << k;
 	string filenameB=BStream.str();
@@ -326,7 +353,7 @@ log_field ( int k )
 		}
 		resultsB << endl;
 	}
-	//close files
+	//Close files
 	resultsB.close();
 
 	return;

@@ -49,11 +49,7 @@ main ( int argc, char *argv[] )
 	if(sim::simulate()){
 		//release memory
 		sim::release_memory(SIGUSR1);
-		return 2;
 	}
 	//release memory
 	sim::release_memory(SIGUSR2);
-
-	//terminate program with exit code 0 (yay!)
-	return 0;
 }				/* ----------  end of function main  ---------- */
