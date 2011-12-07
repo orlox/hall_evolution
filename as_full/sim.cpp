@@ -35,8 +35,6 @@ double **B;
 #ifndef TOROIDAL
 //Values of the function alpha on the 2-d grid
 double **A;
-//Values of the coefficients that give the poloidal field outside the star.
-double *a;
 #endif
 //Arrays that contain the precalculated quantities neccesary to solve evolution of A.
 double **res_term_A;
@@ -61,6 +59,8 @@ int rless;
 #ifndef SIMPLE
 //Number of points used for the multipole fit outside the star
 int l;
+//Values of the coefficients that give the poloidal field outside the star.
+double *a;
 #endif
 #endif
 //Size of spatial steps.
@@ -68,6 +68,8 @@ double dr;
 double dth;
 //The value of pi
 double const Pi=4*atan(1);
+//value of radius and theta in a point of the grid, used multiple times
+double r,th;
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -81,7 +83,9 @@ initial_conditions ( )
 	//Initialize arrays with appropiate sizes
 #ifndef TOROIDAL
 	A=new double*[rNum];
+#ifndef SIMPLE
 	a=new double[l];
+#endif
 #endif
 	B=new double*[rNum];
 	for(int i=0;i<rNum;i++){
@@ -99,7 +103,6 @@ initial_conditions ( )
 	dth=Pi/(thNum-1);
 
 	//Store the initial values of physical quantities
-	double r,th;
 	for(int i=1;i<rNum-1;i++){
 		r=rmin+i*dr;
 		for(int j=1;j<thNum-1;j++){
@@ -168,7 +171,6 @@ solve_repeated_values ( )
 		res_thflux[i]=new double[thNum];
 	}
 	//Solve common terms involved in the calculation of the toroidal field.
-	double r,th;
 	for(int j=1;j<thNum-1;j++){
 		th=j*dth;
 		sines[j]=sin(th);
@@ -228,9 +230,9 @@ simulate ( )
 #ifndef TOROIDAL
 		//Update poloidal field function
 		for(int i=1;i<rNum-1;i++){
-			double r=rmin+i*dr;
+			r=rmin+i*dr;
 			for(int j=1;j<thNum-1;j++){
-				double th=j*dth;
+				th=j*dth;
 				//Solve Grad-Shafranov operator at point
 				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cos(th)/sin(th)*(A[i][j+1]-A[i][j-1])/2/dth;
 				//Evolve poloidal field function at point
@@ -307,7 +309,7 @@ simulate ( )
 			a1=((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
 			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
 			for(int n=1;n<=rless;n++){
-				double r=n*dr;
+				r=n*dr;
 				B[n][j]=a1*r+a2*pow(r,2);
 			}
 			f1=B[rNum-1-rless-1][j];
@@ -315,7 +317,7 @@ simulate ( )
 			a1=-((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
 			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
 			for(int n=1;n<=rless;n++){
-				double r=-n*dr;
+				r=-n*dr;
 				B[rNum-1-n][j]=a1*r+a2*pow(r,2);
 			}
 		}
@@ -349,18 +351,24 @@ solve_integrals ( )
 	double *integrals=new double[2];
 	integrals[0]=integrals[1]=0;
 #else
+#ifndef SIMPLE
 	//When the poloidal field is considered, the individual energy of each multipole outside the star,
 	//and the sum of all the multipoles is also given.
 	double *integrals=new double[4+l];
 	for(int n=0;n<4+l;n++){
 		integrals[n]=0;
 	}
+#else
+	double *integrals=new double[3];
+	integrals[0]=integrals[1]=integrals[2]=0;
+#endif
 #endif
 
 	//Solve quantities integrated over the volume of the star
-	double r;
 	for(int i=1;i<rNum-1;i++){
+#ifndef TOROIDAL
 		r=i*dr+rmin;
+#endif
 		for(int j=1;j<thNum-1;j++){
 			//Toroidal flux
 			integrals[0]+=B[i][j]/sines[j];
@@ -379,11 +387,13 @@ solve_integrals ( )
 	integrals[1]=integrals[1]*dr*dth/4;
 #ifndef TOROIDAL
 	integrals[2]=integrals[2]*dr*dth/4;
+#ifndef SIMPLE
 	//Solve external poloidal energy using the coefficients of the expansion outside the star
 	for(int n=0;n<l;n++){
 		integrals[4+n]=pow(a[n],2)*(n+2)/(8*Pi);
 		integrals[3]+=integrals[4+n];
 	}
+#endif
 #endif
 	return integrals;
 }		/* -----  end of function solve_integrals  ----- */
@@ -412,7 +422,7 @@ solve_A_boundary ( )
 	for(int n=0;n<l;n++){
 		a[n]=0;
 		for(int j=1;j<thNum-2;j++){
-			double th=j*dth;
+			th=j*dth;
 			f1=A[rNum-2][j]*(cos(j*dth)*P[n+1][j]-P[n][j])/sin(j*dth);
 			f0=f2=0;
 			if(j!=thNum-2){
@@ -438,5 +448,66 @@ solve_A_boundary ( )
 }		/* -----  end of function solve_A_boundary  ----- */
 #endif
 #endif
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  release_memory
+ *  Description:  Destroy all used pointers to assure there are no memory leaks
+ * =====================================================================================
+ */
+	void
+release_memory ( )
+{
+	for(int i=0;i<rNum;i++){
+		delete[] B[i];
+		B[i]=NULL;
+#ifndef PUREOHM
+		delete[] hall_rflux[i];
+		hall_rflux[i]=NULL;
+		delete[] hall_thflux[i];
+		hall_thflux[i]=NULL;
+#endif
+		delete[] res_rflux[i];
+		res_rflux[i]=NULL;
+		delete[] res_thflux[i];
+		res_thflux[i]=NULL;
+#ifndef TOROIDAL
+		delete[] A[i];
+		A[i]=NULL;
+		delete[] res_term_A[i];
+		res_term_A[i]=NULL;
+#ifndef PUREOHM
+		delete[] hall_term_A[i];
+		hall_term_A[i]=NULL;
+#endif
+#endif
+	}
+	delete B;
+	B=NULL;
+#ifndef PUREOHM
+	delete hall_rflux;
+	hall_rflux=NULL;
+	delete hall_thflux;
+	hall_thflux=NULL;
+#endif
+	delete res_rflux;
+	res_rflux=NULL;
+	delete res_thflux;
+	res_thflux=NULL;
+#ifndef TOROIDAL
+	delete A;
+	A=NULL;
+	delete res_term_A;
+	res_term_A=NULL;
+#ifndef PUREOHM
+	delete hall_term_A;
+	hall_term_A=NULL;
+#endif
+#ifndef SIMPLE
+	delete[] a;
+	a=NULL;
+#endif
+#endif
+}		/* -----  end of function release_memory  ----- */
 
 }		/* -----  end of namespace sim  ----- */

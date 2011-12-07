@@ -45,8 +45,13 @@ main ( int argc, char *argv[] )
 	io::print_header();
 
 	//perform the simulation. If it fails, exit with error code 2!
-	if(sim::simulate())
+	if(sim::simulate()){
+		//release memory
+		sim::release_memory();
 		return 2;
+	}
+	//release memory
+	sim::release_memory();
 
 	//terminate program with exit code 0 (yay!)
 	return 0;

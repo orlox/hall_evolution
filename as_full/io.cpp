@@ -235,11 +235,14 @@ create_integrals_file ( )
 #ifdef TOROIDAL
 	integrals_file << "#t F_t E_T" << endl;
 #else
-	integrals_file << "#t F_t E_T E_P E_Pe";
+	integrals_file << "#t F_t E_T E_P";
+#ifndef SIMPLE
+	integrals_file << " E_Pe";
 	for(int n=1;n<=sim::l;n++){
 		integrals_file << " E_" << n;
 	}
 	integrals_file << endl;
+#endif
 #endif
 	return;
 }		/* -----  end of function create_integrals_file  ----- */
@@ -256,12 +259,19 @@ log_integrals_file ( double t, double *integrals )
 #ifdef TOROIDAL
 	integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
 #else
-	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << " " << integrals[3];
+	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2];
+#ifndef SIMPLE
+	//log data of poloidal energy outside the star
+	integrals_file << " " << integrals[3];
 	for(int n=1;n<=sim::l;n++){
 		integrals_file << " " << integrals[3+n];
 	}
+#endif
 	integrals_file << endl;
 #endif
+	//release memory
+	delete[] integrals;
+	integrals=NULL;
 	return;
 }		/* -----  end of function log_integrals_file  ----- */
 
