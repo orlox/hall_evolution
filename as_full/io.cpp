@@ -199,7 +199,7 @@ create_folder ( )
 #endif
 #endif
 	//Specify compiler build options, T=TOROIDAL, O=PUREOHM, S=SIMPLE
-	summary << "COMP_OPT: ";
+	summary << "COMP_OPT:";
 #ifdef TOROIDAL
 	summary << "T";
 #endif
@@ -261,9 +261,9 @@ create_integrals_file ( )
 	string filename="results_"+timeStream.str()+"/integrals.dat";
 	integrals_file.open(filename.c_str());
 #ifdef TOROIDAL
-	integrals_file << "#t F_t E_T" << endl;
+	integrals_file << "#t F_t E_loss E_T" << endl;
 #else
-	integrals_file << "#t F_t E_T E_P";
+	integrals_file << "#t F_t E_loss E_T E_P";
 #ifndef SIMPLE
 	integrals_file << " E_Pe";
 	for(int n=1;n<=sim::l;n++){
@@ -285,9 +285,9 @@ create_integrals_file ( )
 log_integrals_file ( double t, double *integrals )
 {
 #ifdef TOROIDAL
-	integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
+	integrals_file << t << " " << integrals[0] << " " << sim::lost_energy << " " << integrals[1] << endl;
 #else
-	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2];
+	integrals_file << t << " " << integrals[0] << " " << sim::lost_energy << " " << integrals[1] << " " << integrals[2];
 #ifndef SIMPLE
 	//Log data of poloidal energy outside the star
 	integrals_file << " " << integrals[3];

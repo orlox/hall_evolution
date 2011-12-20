@@ -36,7 +36,11 @@ namespace initial{
 	double
 A ( double r, double th )
 {
-	return 0.1*(-480.0/47*(pow(r,4)/10-pow(r,2)/6)-17.0/94/r)*pow(sin(th),2);
+	double A=.1501063239606539;
+	double B=.1954706187148793;
+	double k=4.057515676220868;
+	return 10*r*(A*gsl_sf_bessel_jl(1,k*r)+B*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*sin(th);
+	//return 0.1*(-480.0/47*(pow(r,4)/10-pow(r,2)/6)-17.0/94/r)*pow(sin(th),2);
 }		/* -----  end of function Ai  ----- */
 #endif
 

@@ -16,10 +16,10 @@
 \renewcommand{\vec}[1]{\boldsymbol#1}
 \newcommand{\bhat}[1]{\hat{\boldsymbol#1}}
 
-\setlength\topmargin{0in}
+\setlength\topmargin{0.5in}
 \setlength\headheight{0in}
 \setlength\headsep{0in}
-\setlength\textheight{8.5in}
+\setlength\textheight{9in}
 \setlength\textwidth{6.5in}
 \setlength\oddsidemargin{0in}
 \setlength\evensidemargin{0in}
@@ -66,18 +66,18 @@ With a couple of changes, these equations can be transformed into equations for 
 \frac{\pp \beta}{\pp t}=&\varpi^2(\nabla[\chi\Delta\alpha]\times\nabla\alpha+\beta\nabla\chi\times\nabla\beta)\cdot\nabla\phi+\varpi^2\nabla\cdot\left(\frac{\eta\nabla\beta}{\varpi^2}\right).
 \end{aligned}
 \end{eqnarray}
-I will consider an adimensional form of this equation, in which each quantity is expressed in terms of characteristic values $B_0$ for the magnetic field, $\chi_0$ for $\chi$ and the radius of the star $R$ for the radial coordinate $r$. These characteristic values define two timescales
+I will consider an adimensional form of this equation, in which each quantity is expressed in terms of characteristic values $B_0$ for the magnetic field, $n_0$ for $n$ and the radius of the star $R$ for the radial coordinate $r$. These characteristic values define two timescales
 \begin{eqnarray}
-t_h\equiv(\chi_0B_0)^{-1},\quad t_d\equiv\frac{R^2}{\eta}
+t_h\equiv\frac{4\pi ne R^2}{cB_0},\quad t_d\equiv\frac{R^2}{\eta}
 \end{eqnarray}
 and if I consider my unit of time to be $t_h$, the equations for $\alpha$ and $\beta$ (considering all the quantities in their adimensional versions) are given by
 \begin{eqnarray}
 \begin{aligned}
 \frac{\pp\alpha}{\pp t}=&\varpi^2\chi[\nabla\alpha\times\nabla\beta]\cdot\nabla\phi+\left(\frac{t_h}{t_d}\right)\eta\Delta\alpha\\
-\frac{\pp \beta}{\pp t}=&\varpi^2(\nabla[\chi\Delta\alpha]\times\nabla\alpha+\beta\nabla\chi\times\nabla\beta)\cdot\nabla\phi+\left(\frac{t_h}{t_d}\right)\varpi^2\nabla\cdot\left(\frac{\eta\nabla\beta}{\varpi^2}\right).
+\frac{\pp \beta}{\pp t}=&\varpi^2(\nabla[\chi\Delta\alpha]\times\nabla\alpha+\beta\nabla\chi\times\nabla\beta)\cdot\nabla\phi+\left(\frac{t_h}{t_d}\right)\varpi^2\nabla\cdot\left(\frac{\eta\nabla\beta}{\varpi^2}\right),
 \end{aligned}\label{intro::eqs}
 \end{eqnarray}
-
+where the adimensional $\chi$ is given by $\chi=1/(\varpi^2 n)$, with $\varpi$ and $n$ in their adimensional versions of course.
 \section{Toroidal Field}
 To begin, I will consider a toroidal field. It is clear from eq. (\ref{intro::eqs}) that a purely toroidal field will remain toroidal. Although in this section I take $\alpha=0$, I will show first that the eq. for $\beta$ in (\ref{intro::eqs}) can be written as a conservative eq.,
 \begin{eqnarray}
@@ -106,22 +106,10 @@ In order to perform the simulation, I will consider a discretization on a grid w
 \begin{eqnarray}
 \begin{aligned}
 \frac{\beta_{i,j}^{n+1}-\beta_{i,j}^{n}}{\Delta t\sin (j\Delta)\theta}=&\D\frac{1}{\Delta r}\left[\left(\chi\beta\frac{\pp \beta}{\pp\theta}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{\sin\theta}\frac{\pp\beta}{\pp r}\right)_{i+1/2,j}-\left(\chi\beta\frac{\pp \beta}{\pp\theta}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{\sin\theta}\frac{\pp\beta}{\pp r}\right)_{i-1/2,j}\right]\\
-&\D+\frac{1}{\Delta\theta}\left[\left(-\chi\beta\frac{\pp\beta}{\pp r}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}\right)_{i,j+1/2}-\left(-\chi\beta\frac{\pp\beta}{\pp r}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}\right)_{i,j-1/2}\right]
+&\D+\frac{1}{\Delta\theta}\left[\left(-\chi\beta\frac{\pp\beta}{\pp r}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}\right)_{i,j+1/2}-\left(-\chi\beta\frac{\pp\beta}{\pp r}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}\right)_{i,j-1/2}\right].\label{equbetacons}
 \end{aligned}
 \end{eqnarray}
-\begin{eqnarray}
-\begin{aligned}
-\frac{\beta_{i,j}^{n+1}-\beta_{i,j}^{n}}{\Delta t\sin (j\Delta)\theta}=\D\frac{1}{\Delta r}\left[\frac{1}{8\Delta\theta}(\beta_{i+1,j}+\beta_{i,j})(\beta_{i,j+1}+\beta_{i+1,j+1}-\beta_{i,j-1}-\beta_{i+1,j-1})\chi([i+1/2]\Delta r,j\Delta\theta)\right.\\
-\left.-\frac{1}{8\Delta\theta}(\beta_{i,j}+\beta_{i-1,j})(\beta_{i,j+1}+\beta_{i-1,j+1}-\beta_{i,j-1}-\beta_{i-1,j-1})\chi([i-1/2]\Delta r,j\Delta\theta)\right.\\
-+\left.\left(\frac{t_h}{t_d}\right)\frac{1}{\Delta r\sin(j\Delta\theta)}\eta([i+1/2]\Delta r,j\Delta\theta)(\beta_{i+1,j}-\beta_{i,j})\right.\\
-\left.-\left(\frac{t_h}{t_d}\right)\frac{1}{\Delta r\sin(j\Delta\theta)}\eta([i-1/2]\Delta r,j\Delta\theta)(\beta_{i,j}-\beta_{i-1,j})\right]\\
-+\frac{1}{\Delta \theta}\left[-\frac{1}{8\Delta r}(\beta_{i,j+1}+\beta_{i,j})(\beta_{i+1,j+1}+\beta_{i+1,j}-\beta_{i-1,j}-\beta_{i-1,j+1})\chi(i\Delta r,[j+1/2]\Delta\theta)\right.\\
-\left.+\frac{1}{8\Delta r}(\beta_{i,j}+\beta_{i,j-1})(\beta_{i+1,j-1}+\beta_{i+1,j}-\beta_{i-1,j}-\beta_{i-1,j-1})\chi(i\Delta r,[j-1/2]\Delta\theta)\right.\\
-+\left.\left(\frac{t_h}{t_d}\right)\frac{1}{\Delta \theta(i\Delta r)^2}\frac{\eta(i\Delta r,[j+1/2]\Delta\theta)(\beta_{i,j+1}-\beta_{i,j})}{\sin([j+1/2]\Delta\theta)}\right.\\
-\left.-\left(\frac{t_h}{t_d}\right)\frac{1}{\Delta \theta(i\Delta r)^2}\frac{\eta(i\Delta r,[j-1/2]\Delta\theta)(\beta_{i,j}-\beta_{i,j-1})}{\sin([j-1/2]\Delta\theta)}\right].
-\end{aligned}
-\end{eqnarray}
-This scheme is implemented in the code as\_toroidal.cpp, using as boundary conditions $\beta=0$ in the axis, the inner radius, and the surface.
+
 \section{Toroidal plus poloidal field}
 A purely poloidal field, unless it is in precise equilibrium, will produce a toroidal component. Thus, it is not possible to treat the evolution of a purely poloidal field without including the toroidal component.
 
@@ -129,26 +117,47 @@ The modified form of eq. (\ref{equbeta}), including the effect of the poloidal f
 \begin{eqnarray}
 \frac{\pp}{\pp t}\left(\frac{\beta}{\sin\theta}\right)=\frac{\pp}{\pp r}\left(\chi\Delta\alpha\frac{\pp\alpha}{\pp\theta}+\chi\beta\frac{\pp \beta}{\pp\theta}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{\sin\theta}\frac{\pp\beta}{\pp r}\right)+\frac{\pp}{\pp\theta}\left(-\chi\Delta\alpha\frac{\pp\alpha}{\pp r}-\chi\beta\frac{\pp\beta}{\pp r}+\left(\frac{t_h}{t_d}\right)\frac{\eta}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}\right),
 \end{eqnarray}
-where the evaluation of the term $\Delta\alpha$ at midpoints of the grid is not a trivial affair.
-
-Regarding the equation for $\alpha$, it can be written in a form appropriate to be numerically solved by a backwards "characteristics" method\footnote{I believe this is not the appropriate translation...Is it finite moving element?},
-\begin{eqnarray}
-\frac{\pp\alpha}{\pp t}+\left(-\sin\theta\chi\frac{\pp\beta}{\pp\theta}\right)\frac{\pp \alpha}{\pp r}+\left(\sin\theta\chi\frac{\pp\beta}{\pp r}\right)\frac{\pp \alpha}{\pp \theta}=\eta\Delta\alpha
-\end{eqnarray}
-where $\alpha$ will be advected in the $r-\theta$ grid with a  velocity
-\begin{eqnarray}
-\vec{v}=\left(-\sin\theta\chi\frac{\pp\beta}{\pp \theta},\sin\theta\chi\frac{\pp\beta}{\pp r}\right).
-\end{eqnarray}
-The use of this method will then impose a necessary stability condition, given by (with an abuse of the $<$ operator)
-\begin{eqnarray}
-\vec{v}\Delta t<(\Delta r,\Delta\theta).
-\end{eqnarray}
+for which a conservative scheme can be written just as was done in eq. (\ref{equbetacons}). However, the evaluation of the term $\Delta\alpha$ at midpoints of the grid is not a trivial affair, since it requires more than the neighbouring points to be solved. Since those extra points are not available for points right at the boundaries,  a special treatment is required there, which is explained in the following section.
 \section{Boundary Conditions}
 For our simulations we will consider the magnetic field to be confined inside a spherical shell (the crust of the neutron star) with an internal radius $r_{min}$. The interior of the star is (for now) considered to be a superconducting fluid which has completely expelled all its magnetic flux.
-\subsection{Conditions for $\beta$}
-\subsection{Conditions for $\alpha$}
+\subsection{Conditions at the axis $\theta=0,\pi$}
+The only requirement at the axis is that the magnetic field is not a multi-valued function. This implies that $B_{phi}=B_{\theta}=0$, which in turn gives
+\begin{eqnarray}
+\beta(\theta=0,\pi)=0,\qquad \frac{\pp\alpha}{\pp r}(\theta=0,\pi)=0,
+\end{eqnarray}
+which means $\alpha$ is constant at the axis. Since $\alpha$ has an arbitrary "zero-point", we choose $\alpha=0$ at the axis.
+\subsection{Conditions for $r=r_{min}$}
+At the inner boundary, where I have the interface between the crust and the inner superconducting shell, I require the normal component of the magnetic field and the tangential component of the electric field to be continuous,
+\begin{eqnarray}
+[B_r]_{in}=[B_r]_{out},\qquad [E_{\theta}]_{in}=[E_{\theta}]_{out},\qquad [E_{\phi}]_{in}=[E_{\phi}]_{out},
+\end{eqnarray}
+However, I expect both the magnetic and the electric field to be zero inside the superconductor, so these conditions are simply
+\begin{eqnarray}
+B_r(r=r_{min})=0,\qquad E_{\theta}(r=r_{min})=0,\qquad E_{\phi}(r=r_{min})=0.
+\end{eqnarray}
+The easiest of these three to apply is the first one. Since $B_r\propto \pp\alpha/\pp\theta$, it implies that $\alpha$ is constant at the boundary, and since we already fixed $\alpha=0$ at the symmetry axis we must have $\alpha=0$ at  $r=r_{min}$ also.
+
+The condition on the electric field produces a much complex boundary condition. In terms of the magnetic field, the electric field in the crust is given by
+\begin{eqnarray}
+-c\vec{E}=\frac{c}{4\pi n e}(\nabla\times\vec{B})\times\vec{B}+\eta\nabla\times\vec{B},
+\end{eqnarray}
+so requiring the tangential component of the electric field to be zero at the boundary is equivalent to
+\begin{eqnarray}
+0=\left[(\nabla\times\vec{B})\times\vec{B}+(n\eta)\left(\frac{t_h}{t_d}\right)\nabla\times\vec{B}\right]_T,
+\end{eqnarray}
+where $T$ denotes the tangential component, and $n$ and $\eta$ are the adimensional electron density and resistivity. In terms of $\alpha$ and $\beta$ this produces the following two (non-linear) boundary conditions
+\begin{eqnarray}
+\begin{aligned}
+0=&\frac{\beta}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}+(n\eta)\frac{t_h}{t_d}\frac{\pp\beta}{\pp r}\\
+0=&\frac{1}{r^2\sin\theta}\frac{\pp\beta}{\pp\theta}\frac{\pp\alpha}{\pp r}+(n\eta)\frac{t_h}{t_d}\Delta\alpha
+\end{aligned}
+\end{eqnarray}
+\subsection{Conditions for $r=R$}
+If outside the star we consider a perfect vacuum, then the magnetic field there is completely determined by its radial component at the surface of the star, which must be continuous. Furthermore, we expect surface currents to dissipate in timescales much smaller than those of interest to us, so not only the radial component of the magnetic field must be continuous, but the tangential one also.
+
+The condition imposed on $\beta$ because of this is trivial. Since there are no currents outside the star, we must have $\beta=0$ there, and the continuity of the azimuthal component of the field immediately gives $\beta=0$ as a boundary condition at $r=R$.
 \section{Ohm Eigenmodes}
-If we consider the evolution of the magnetic field
+If I consider the evolution of the magnetic field
 \end{document}
 
 
