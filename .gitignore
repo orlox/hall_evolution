@@ -5,6 +5,8 @@
 *.dat
 *.backup
 *.swp
+*.bbl
+*.blg
 results_*
 
 #########################
