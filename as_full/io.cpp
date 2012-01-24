@@ -263,14 +263,14 @@ create_integrals_file ( )
 #ifdef TOROIDAL
 	integrals_file << "#t F_t E_loss E_T" << endl;
 #else
-	integrals_file << "#t F_t E_loss E_T E_P";
+	integrals_file << "#t F_t E_loss E_T E_P" ;
 #ifndef SIMPLE
 	integrals_file << " E_Pe";
 	for(int n=1;n<=sim::l;n++){
 		integrals_file << " E_" << n;
 	}
-	integrals_file << endl;
 #endif
+	integrals_file << endl;
 #endif
 	return;
 }		/* -----  end of function create_integrals_file  ----- */

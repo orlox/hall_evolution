@@ -2,11 +2,11 @@
 /* [ Created with wxMaxima version 11.08.0 ] */
 
 /* [wxMaxima: input   start ] */
-l:1;
+l:2;
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-rmin:0.5;
+rmin:0.75;
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
@@ -19,11 +19,11 @@ define(f(k),%);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-plot2d(f(k)*k**2,[k,0,10]);
+plot2d(f(k)*k**2,[k,0,20]);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-kk:find_root(f(k)*k**2,k,2,6);
+kk:find_root(f(k)*k**2,k,15,20);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
@@ -60,6 +60,73 @@ f(x):=A*spherical_bessel_j(l,kk*x)+B*spherical_bessel_y(l,kk*x);
 
 /* [wxMaxima: input   start ] */
 plot2d(f(x),[x,rmin,1]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+(
+E*((l+1)/k*spherical_bessel_y(l,k)+diff(spherical_bessel_y(l,k),k))*spherical_bessel_j(l,r*k)
+-E*((l+1)/k*spherical_bessel_j(l,k)+diff(spherical_bessel_j(l,k),k))*spherical_bessel_y(l,r*k)
+)*assoc_legendre_p(l,1,cos(theta))*r*sin(theta);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+define(alpha(r,theta,E,k,l),%)$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+((diff(alpha(r,theta,B,k,l),r)/r/sin(theta))**2+(diff(alpha(r,theta,B,k,l),theta)/r**2/sin(theta))**2)**(1/2)$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+define(BP(r,theta,B,k,l),%)$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+wxplot3d(BP(r,theta,1,7.81795,2), [r,0.75,1], [theta,0,%pi],
+ [grid,60,60],
+ [gnuplot_preamble, "set pm3d map"])$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+wxplot3d(alpha(r,theta,10,19.1279300220322,1), [r,0.75,1], [theta,0,%pi],
+ [grid,60,60],
+ [gnuplot_preamble, "set pm3d map"])$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+wxplot2d([BP(0.75,th,4.05715,7.81795,2)], [th,%pi/4-0.0001,%pi/4+0.0001])$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+5.36845
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+E*((l+1)/k*spherical_bessel_y(l,k)+diff(spherical_bessel_y(l,k),k));
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+define(A(E,k,l),%);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+-E*((l+1)/k*spherical_bessel_j(l,k)+diff(spherical_bessel_j(l,k),k));
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+define(B(E,k,l),%);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+A(4.05715,7.81795,2);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+B(4.05715,7.81795,2);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+float(1/8/%pi);
 /* [wxMaxima: input   end   ] */
 
 /* Maxima can't load/batch files which end with a comment! */

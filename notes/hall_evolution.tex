@@ -126,13 +126,13 @@ The time evolution equation for $\alpha$ is given in spherical coordinates by
 \frac{\pp\alpha}{\pp t}=\sin\theta\chi\left(\frac{\pp\beta}{\pp\theta}\frac{\pp \alpha}{\pp r}-\frac{\pp\beta}{\pp r}\frac{\pp \alpha}{\pp \theta}\right)+\eta\Delta\alpha
 \end{eqnarray}
 \section{Boundary Conditions}
-For our simulations we will consider the magnetic field to be confined inside a spherical shell (the crust of the neutron star) with an internal radius $r_{min}$. The interior of the star is (for now) considered to be a superconducting fluid which has completely expelled all its magnetic flux.
+For our simulations I will consider the magnetic field to be confined inside a spherical shell (the crust of the neutron star) with an internal radius $r_{min}$. The interior of the star is (for now) considered to be a superconducting fluid which has completely expelled all its magnetic flux due to the Meisnner effect.
 \subsection{Conditions at the axis $\theta=0,\pi$}
 The only requirement at the axis is that the magnetic field is not a multi-valued function. This implies that $B_{phi}=B_{\theta}=0$, which in turn gives
 \begin{eqnarray}
 \beta(\theta=0,\pi)=0,\qquad \frac{\pp\alpha}{\pp r}(\theta=0,\pi)=0,
 \end{eqnarray}
-which means $\alpha$ is constant at the axis. Since $\alpha$ has an arbitrary "zero-point", we choose $\alpha=0$ at the axis.
+which means $\alpha$ is constant at the axis. Since $\alpha$ has an arbitrary "zero-point", I choose $\alpha=0$ at the axis.
 \subsection{Conditions for $r=r_{min}$}
 At the inner boundary, where I have the interface between the crust and the inner superconducting shell, I require the normal component of the magnetic field and the tangential component of the electric field to be continuous,
 \begin{eqnarray}
@@ -142,7 +142,7 @@ However, I expect both the magnetic and the electric field to be zero inside the
 \begin{eqnarray}
 B_r(r=r_{min})=0,\qquad E_{\theta}(r=r_{min})=0,\qquad E_{\phi}(r=r_{min})=0.
 \end{eqnarray}
-The easiest of these three to apply is the first one. Since $B_r\propto \pp\alpha/\pp\theta$, it implies that $\alpha$ is constant at the boundary, and since we already fixed $\alpha=0$ at the symmetry axis we must have $\alpha=0$ at  $r=r_{min}$ also.
+The easiest of these three to apply is the first one. Since $B_r\propto \pp\alpha/\pp\theta$, it implies that $\alpha$ is constant at the boundary, and since I already fixed $\alpha=0$ at the symmetry axis I must have $\alpha=0$ at  $r=r_{min}$ also.
 
 The condition on the electric field produces a much more complex boundary condition. In terms of the magnetic field, the electric field in the crust is given by
 \begin{eqnarray}
@@ -160,18 +160,46 @@ where $T$ denotes the tangential component, and $n$ and $\eta$ are the adimensio
 \end{aligned}
 \end{eqnarray}
 \subsection{Conditions for $r=R$}
-If outside the star we consider a perfect vacuum, then the magnetic field there is completely determined by its radial component at the surface of the star, which must be continuous. Furthermore, we expect surface currents to dissipate in timescales much smaller than those of interest to us, so not only the radial component of the magnetic field must be continuous, but the tangential one also.
+If outside the star I consider a perfect vacuum, then the magnetic field there is completely determined by its radial component at the surface of the star, which must be continuous. Furthermore, I expect surface currents to dissipate in timescales much smaller than those of interest to us, so not only the radial component of the magnetic field must be continuous, but the tangential one also.
 
-The condition imposed on $\beta$ because of this is trivial. Since there are no currents outside the star, we must have $\beta=0$ there, and the continuity of the azimuthal component of the field immediately gives $\beta=0$ as a boundary condition at $r=R$.
+The condition imposed on $\beta$ because of this is trivial. Since there are no currents outside the star, I must have $\beta=0$ there, and the continuity of the azimuthal component of the field immediately gives $\beta=0$ as a boundary condition at $r=R$.
 
-The condition on $\alpha$ is much more complex, as it is non-local. As shown in \citet{mar+11}, the field outside the star is given by
+The condition on $\alpha$ is much more complex, as it is non-local. As shown in \citet{mar+11}, the continuity of the radial component of the magnetic field implies that the field outside the star is given by
 \begin{eqnarray}
 \vec{B}=\nabla\Psi,\quad \Psi(r,\theta,\phi)=\sum_{l=1}^{\infty}\sum_{m=-l}^{l}\frac{a_{lm}}{r^{l+1}}Y_{lm}(\theta,\phi),\quad a_{lm}=-\frac{R^{l+2}}{l+1}\int_{4\pi}Y_{lm}^*(B_r)_{r=R}\dd\Omega,
 \end{eqnarray}
-where $(B_r)_{r=R}$ is the radial field $\vec{B}\cdot\bhat{r}$ at the surface of the star.
-\section{Ohm Eigenmodes}
-If I consider the evolution of the magnetic field
-
+where $(B_r)_{r=R}$ is the radial field $\vec{B}\cdot\bhat{r}$ at the surface of the star, which can be expressed in terms of $\alpha$ by $([r^2\sin\theta]^{-1}\pp\alpha/\pp\theta)_{r=R}$. Under axial symmetry, only the coefficients with $m\neq0$ are non-zero, and for these cases, I have (omitting the unnecessary $m=0$ sub-index)
+\begin{eqnarray}
+a_l=-\frac{R^{l+2}}{l+1}\int_0^{2\pi}\dd\phi\int_0^{\pi} Y_{l,0}^*([r^2\sin\theta]^{-1}\pp\alpha/\pp\theta)_{r=R}\cdot \sin\theta\dd\theta=-\frac{R^l}{l+1}\sqrt{\frac{2l+1}{4\pi}}\cdot 2\pi \int_0^{\pi} P_l(\cos\theta)\frac{\pp\alpha}{\pp\theta} \dd\theta,
+\end{eqnarray}
+where I droped the notation $(r=R)$ for clarity. This can be solved using integration by parts to obtain an expression that only depends on $\alpha$. Boundary terms are zero, since I set $\alpha=0$ at the axis and the Legendre polynomials are non-singular, so I have
+\begin{eqnarray}
+a_l=\frac{R^l}{l+1}\sqrt{\pi(2l+1)}\int_0^{\pi}\frac{\pp P_l(\cos\theta)}{\pp \theta}\alpha\dd\theta=\frac{R^l}{l+1}\sqrt{\pi(2l+1)}\int_0^{\pi}-\sin\theta\frac{\pp P_l(\cos\theta)}{\pp \cos\theta}\alpha\dd\theta.
+\end{eqnarray}
+The derivative of the Legendre polynomial can be solved using the identity
+\begin{eqnarray}
+\frac{x^2-1}{l}\frac{\dd}{\dd x}P_l(x)=xP_l(x)-P_{n-1}(x),\label{identityLeg}
+\end{eqnarray}
+with which I get the expression for the $a_l$ I require,
+\begin{eqnarray}
+a_l=\frac{lR^l}{l+1}\sqrt{\pi(2l+1)}\int_0^{\pi}\frac{\alpha(\cos\theta P_l(\cos\theta)-P_{l-1}(\cos\theta))}{\sin\theta}\dd\theta.=\frac{lR^l}{l+1}\sqrt{\pi(2l+1)}A_l,
+\end{eqnarray}
+where $A_l$ stands for the integral. So far, I have not used that I need the tangential component of the magnetic field to be continuous through the surface. This will require the $r$ derivative of $\alpha$ to be continuous across the surface of the star. In order to use it, I first need to solve the value of $\alpha$ outside the star, given the values of the $a_l$. For $r>R$ I have that
+\begin{eqnarray}
+B_\theta=\sum_{l=1}^\infty\frac{a_l}{r^{l+2}}\sqrt{\frac{2l+1}{4\pi}}\frac{\pp}{\pp\theta}P_l(\cos\theta)=-\frac{1}{r\sin\theta}\frac{\pp\alpha}{\pp r},
+\end{eqnarray}
+and I can use eq. (\ref{identityLeg}), solve for $\pp\alpha/\pp r$, integrate and apply the condition $\alpha\rightarrow 0$ when $r\rightarrow\infty$ to obtain
+\begin{eqnarray}
+\alpha=\sum_{l=1}^{\infty}\frac{a_l}{r^l}\sqrt{\frac{2l+1}{4\pi}}(\cos\theta P_l(\cos\theta)-P_{l-1}(\cos\theta))=
+\sum_{l=1}^{\infty}\left(\frac{R}{r}\right)^l\frac{l(2l+1)}{2(l+1)}A_l(\cos\theta P_l(\cos\theta)-P_{l-1}(\cos\theta)),\label{equalphabound}
+\end{eqnarray}
+so, if I am able to solve the values of the $A_l$, I could use this expression to obtain the value of $\alpha$ at a point just outside the star, and thus, the boundary condition would be met. However, for practical reasons, I cannot time-evolve $\alpha$ right at the surface\footnote{in realistic density profiles where $n_e\rightarrow0$ at the surface, I have that $\chi\rightarrow\infty$, making it impossible for a finite difference code to time-evolve that point.}, so what I actually do, is to solve the $A_l$ at $R-\Delta r$ instead of at $R$, and use eq. (\ref{equalphabound}) with $R$ replaced by $R-\Delta r$ to solve the value of $\alpha$ at $R$.
+\section{Ohm Eigenmodes (constant $\eta$)}
+If I consider the evolution of the magnetic field due purely to Ohm, with constant resistivity, then the time-evolution eqs. (\ref{intro::eqs}) are the same for both $\alpha$ and $\beta$,
+\begin{eqnarray}
+\frac{\pp\alpha}{\pp t}=\eta\Delta \alpha,\qquad \frac{\pp\beta}{\pp t}=\eta\Delta \beta,
+\end{eqnarray}
+where I have setted $(t_h/t_d)=1$, since Hall terms are irrelevant here.
 \bibliography{biblio}
 
 \end{document}

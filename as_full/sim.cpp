@@ -307,17 +307,17 @@ simulate ( )
 				Baux[i][j+1]-=dBth*sines[j+1];
 			}
 		}
-		//Solve expected energy loss
-		for(int i=1;i<rNum-1;i++){
-			r=rmin+i*dr;
-			for(int j=1;j<thNum-1;j++){
-				th=j*dth;
-				lost_energy-=dt*thtd*initial::eta(r,th)*dr*dth/2/(sines[j])*(pow((B[i+1][j]-B[i-1][j])/(2*dr),2)+pow((B[i][j+1]-B[i][j-1])/(2*dth*r),2));
-#ifndef TOROIDAL
-				lost_energy-=dt*thtd*initial::eta(r,th)*dr*dth/2/(sines[j])*(pow(gsA[i][j],2));
-#endif
-			}
-		}
+//		//Solve expected energy loss
+//		for(int i=1;i<rNum-1;i++){
+//			r=rmin+i*dr;
+//			for(int j=1;j<thNum-1;j++){
+//				th=j*dth;
+//				lost_energy-=dt*thtd*initial::eta(r,th)*dr*dth/2/(sines[j])*(pow((B[i+1][j]-B[i-1][j])/(2*dr),2)+pow((B[i][j+1]-B[i][j-1])/(2*dth*r),2));
+//#ifndef TOROIDAL
+//				lost_energy-=dt*thtd*initial::eta(r,th)*dr*dth/2/(sines[j])*(pow(gsA[i][j],2));
+//#endif
+//			}
+//		}
 		//Pass values from auxiliary array Baux and Aaux
 		for(int i=1;i<rNum-1;i++){
 			for(int j=1;j<thNum-1;j++){
