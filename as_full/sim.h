@@ -30,8 +30,6 @@ extern double **B;
 #ifndef TOROIDAL
 extern double **A;
 #endif
-//Lost energy calculated from an analytical expression. Should match the real loss.
-extern double lost_energy;
 //minimun radius of the shell containing the magnetic field.
 extern double rmin;
 //Number of points in the radial direction both at the surface and the inner boundary for which the values

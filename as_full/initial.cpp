@@ -36,11 +36,11 @@ namespace initial{
 	double
 A ( double r, double th )
 {
-//	double A=-0.55882;
-//	double B=-0.52004;
-//	double k=7.03266;
-//	return 0*r*(A*gsl_sf_bessel_jl(1,k*r)+B*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*sin(th);
-	return 1/2.0*pow(sin(th),2)*((3*pow(rmin,5)-5*pow(rmin,3))/r+5*pow(r,2)-3*pow(r,4))/(2-5*pow(rmin,3)+3*pow(rmin,5));
+	double A=-0.55882;
+	double B=-0.52004;
+	double k=7.03266;
+	return 1*r*(A*gsl_sf_bessel_jl(1,k*r)+B*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*sin(th);
+//	return 1/2.0*pow(sin(th),2)*((3*pow(rmin,5)-5*pow(rmin,3))/r+5*pow(r,2)-3*pow(r,4))/(2-5*pow(rmin,3)+3*pow(rmin,5));
 }		/* -----  end of function Ai  ----- */
 #endif
 
@@ -58,7 +58,7 @@ B ( double r, double th )
 	double A=-2.00235;
 	double B=10.81346;
 	double k=12.67071;
-	return 1*r*(A*gsl_sf_bessel_jl(1,k*r)+B*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*sin(th);
+	return 0.1*r*(A*gsl_sf_bessel_jl(1,k*r)+B*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*sin(th);
 }		/* -----  end of function B  ----- */
 
 /* 
