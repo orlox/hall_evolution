@@ -36,10 +36,36 @@ namespace initial{
 	double
 A ( double r, double th )
 {
+	//#######################OHM EIGENMODES#######################
+	//The following conditions correspond to Ohm eigenmodes
+	//for constant resistivity, and are normalized so B_pol
+	//is very close to 1 at its maximun. This values require
+	//r_min=0.75.
+	//MODE 1,1
+	int l=1;
 	double A=-0.55882;
 	double B=-0.52004;
 	double k=7.03266;
-	return 1*r*(A*gsl_sf_bessel_jl(1,k*r)+B*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*sin(th);
+	//MODE 2,1
+//	int l=1;
+//	double A=-0.72288;
+//	double B=-0.20659;
+//	double k=19.12793;
+	//MODE 1,2
+//	int l=2;
+//	double A=-0.52101;
+//	double B=-0.04764;
+//	double k=7.81795;
+	//MODE 2,2
+//	int l=2;
+//	double A=-0.31188;
+//	double B=0.39534;
+//	double k=19.46616;
+
+	return 1*r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
+	//######################END OHM EIGENMODES####################
+
+	//Equilibrium field due to rigid body rotation of electrons for constant electron density
 //	return 1/2.0*pow(sin(th),2)*((3*pow(rmin,5)-5*pow(rmin,3))/r+5*pow(r,2)-3*pow(r,4))/(2-5*pow(rmin,3)+3*pow(rmin,5));
 }		/* -----  end of function Ai  ----- */
 #endif
@@ -55,10 +81,34 @@ A ( double r, double th )
 	double
 B ( double r, double th )
 {
+	//#######################OHM EIGENMODES#######################
+	//The following conditions correspond to Ohm eigenmodes
+	//for constant resistivity, and are normalized so B_tor
+	//is very close to 1 at its maximun. These values require
+	//r_min=0.75.
+	//MODE 1,1
+	int l=1;
 	double A=-2.00235;
 	double B=10.81346;
 	double k=12.67071;
-	return 0.1*r*(A*gsl_sf_bessel_jl(1,k*r)+B*gsl_sf_bessel_yl(1,k*r))*gsl_sf_legendre_Plm(1,1,cos(th))*sin(th);
+	//MODE 2,1
+//	int l=1;
+//	double A=-1.88596;
+//	double B=20.32767;
+//	double k=25.18557;
+	//MODE 1,2
+//	int l=2;
+//	double A=6.32868;
+//	double B=3.82300;
+//	double k=12.87682;
+	//MODE 2,2
+//	int l=2;
+//	double A=13.11642;
+//	double B=3.72583;
+//	double k=25.29089;
+
+	return 1*r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
+	//######################END OHM EIGENMODES####################
 }		/* -----  end of function B  ----- */
 
 /* 
