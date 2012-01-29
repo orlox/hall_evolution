@@ -373,18 +373,19 @@ solve_integrals ( )
 #endif
 
 	//Solve quantities integrated over the volume of the star
-	for(int i=1;i<rNum-1;i++){
+	for(int i=0;i<rNum-1;i++){
 #ifndef TOROIDAL
-		r=i*dr+rmin;
+		r=(0.5+i)*dr+rmin;
 #endif
-		for(int j=1;j<thNum-1;j++){
+		for(int j=0;j<thNum-1;j++){
+			th=(0.5+j)*dth;
 			//Toroidal flux
-			integrals[0]+=B[i][j]/sines[j];
+			integrals[0]+=(B[i][j]+B[i+1][j]+B[i][j+1]+B[i+1][j+1])/4/sin(th);
 			//Toroidal energy
-			integrals[1]+=pow(B[i][j],2)/sines[j];
+			integrals[1]+=pow((B[i][j]+B[i+1][j]+B[i][j+1]+B[i+1][j+1])/4,2)/sin(th);
 #ifndef TOROIDAL
 			//Poloidal energy
-			integrals[2]+=pow((A[i+1][j]-A[i-1][j])/2/dr,2)/sines[j]+pow((A[i][j+1]-A[i][j-1])/2/dth,2)/r/r/sines[j];
+			integrals[2]+=pow((A[i+1][j]-A[i][j]+A[i+1][j+1]-A[i][j+1])/2/dr,2)/sin(th)+pow((A[i][j+1]-A[i][j]+A[i+1][j+1]-A[i+1][j])/2/dth,2)/r/r/sin(th);
 #endif
 		}
 	}
