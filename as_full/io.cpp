@@ -180,7 +180,7 @@ create_folder ( )
 	summary << "rmin:" << sim::rmin << ", ";
 	summary << "rless:" << sim::rless << ", ";
 #ifndef TOROIDAL
-	summary << "l:" << sim::rless << ", ";
+	summary << "l:" << sim::l << ", ";
 #endif
 	//Specify compiler build options, T=TOROIDAL, O=PUREOHM
 	summary << "COMP_OPT:";
