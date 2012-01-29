@@ -56,7 +56,6 @@ double rmin;
 //will be solved by interpolation, and not direct calculation through the time evolution equation.
 int rless;
 #ifndef TOROIDAL
-#ifndef SIMPLE
 //Number of points used for the multipole fit outside the star
 int l;
 //Values of the coefficients that give the poloidal field outside the star.
@@ -67,7 +66,6 @@ double *boundary_factors;
 double **legendre_comb;
 //Auxiliary variables used in function sim::solve_A_boundary to integrate the multipole coefficients
 double f0,f1,f2;
-#endif
 #endif
 //Size of spatial steps.
 double dr,dth;
@@ -88,9 +86,7 @@ initial_conditions ( )
 	//Initialize arrays with appropiate sizes
 #ifndef TOROIDAL
 	A=new double*[rNum];
-#ifndef SIMPLE
 	a=new double[l];
-#endif
 #endif
 	B=new double*[rNum];
 	for(int i=0;i<rNum;i++){
@@ -140,10 +136,8 @@ initial_conditions ( )
 	solve_repeated_values();
 
 #ifndef TOROIDAL
-#ifndef SIMPLE
 	//Adjust alpha boundary conditions to fit smoothly to a poloidal field outside the star
 	solve_A_boundary();
-#endif
 #endif
 	
 	return;
@@ -199,7 +193,6 @@ solve_repeated_values ( )
 	}
 	//Solve common terms involved in resolution of the multipole fit outside the star
 #ifndef TOROIDAL
-#ifndef SIMPLE
 	boundary_factors=new double[l];
 	legendre_comb=new double*[l];
 	for(int n=0;n<l;n++){
@@ -210,7 +203,6 @@ solve_repeated_values ( )
 			legendre_comb[n][j]=(cos(th)*gsl_sf_legendre_Pl(n+1,cos(th))-gsl_sf_legendre_Pl(n,cos(th)))/sin(th);
 		}
 	}
-#endif
 #endif
 	return;
 }		/* -----  end of function solve_repeated_values  ----- */
@@ -345,9 +337,7 @@ simulate ( )
 			}
 		}
 #ifndef TOROIDAL
-#ifndef SIMPLE
 		solve_A_boundary();
-#endif
 #endif
 	}
 
@@ -374,17 +364,12 @@ solve_integrals ( )
 	double *integrals=new double[2];
 	integrals[0]=integrals[1]=0;
 #else
-#ifndef SIMPLE
 	//When the poloidal field is considered, the individual energy of each multipole outside the star,
 	//and the sum of all the multipoles is also given.
 	double *integrals=new double[4+l];
 	for(int n=0;n<4+l;n++){
 		integrals[n]=0;
 	}
-#else
-	double *integrals=new double[3];
-	integrals[0]=integrals[1]=integrals[2]=0;
-#endif
 #endif
 
 	//Solve quantities integrated over the volume of the star
@@ -410,7 +395,6 @@ solve_integrals ( )
 	integrals[1]=integrals[1]*dr*dth/4;
 #ifndef TOROIDAL
 	integrals[2]=integrals[2]*dr*dth/4;
-#ifndef SIMPLE
 	//Solve external poloidal energy using the coefficients of the expansion outside the star
 	//the coefficients "a" are missing some terms to represent the ones used in the notes
 	for(int n=0;n<l;n++){
@@ -419,18 +403,16 @@ solve_integrals ( )
 		integrals[3]+=integrals[4+n];
 	}
 #endif
-#endif
 	return integrals;
 }		/* -----  end of function solve_integrals  ----- */
 
+#ifndef TOROIDAL
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  solve_A_boundary
  *  Description:  Solves the boundary values of A such that the field connects smoothly to a potential field outside the star
  * =====================================================================================
  */
-#ifndef TOROIDAL
-#ifndef SIMPLE
 	void
 solve_A_boundary ( )
 {
@@ -468,7 +450,6 @@ solve_A_boundary ( )
 	}
 	return;
 }		/* -----  end of function solve_A_boundary  ----- */
-#endif
 #endif
 
 /* 
@@ -527,7 +508,6 @@ release_memory ( int info )
 	delete hall_term_A;
 	hall_term_A=NULL;
 #endif
-#ifndef SIMPLE
 	delete[] a;
 	a=NULL;
 	delete[] boundary_factors;
@@ -538,7 +518,6 @@ release_memory ( int info )
 	}
 	delete[] legendre_comb;
 	legendre_comb=NULL;
-#endif
 #endif
 	io::report_completion(info);
 }		/* -----  end of function release_memory  ----- */

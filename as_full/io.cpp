@@ -49,20 +49,14 @@ read_args ( int argc, char *argv[] )
 #ifdef TOROIDAL
 	if(argc!=8)
 #else
-#ifdef SIMPLE
-	if(argc!=8)
-#else
 	if(argc!=9)
-#endif
 #endif
 	{
 		cerr<<"ERROR: Not enough arguments provided"<<endl;
 		cerr<<"usage is:"<<endl;
 		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <rless(int)>";
 #ifndef TOROIDAL
-#ifndef SIMPLE
 		cerr<<" <l(int)>";
-#endif
 #endif
 		cerr<<endl;
 		return 1;
@@ -77,9 +71,7 @@ read_args ( int argc, char *argv[] )
 			!io::is_float(argv[6])||
 			!io::is_integer(argv[7])
 #ifndef TOROIDAL
-#ifndef SIMPLE
 			||!io::is_integer(argv[8])
-#endif
 #endif
 			)
 	{
@@ -87,9 +79,7 @@ read_args ( int argc, char *argv[] )
 		cerr<<"usage is:"<<endl;
 		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <rless(int)>";
 #ifndef TOROIDAL
-#ifndef SIMPLE
 		cerr<<" <l(int)>";
-#endif
 #endif
 		return 1;
 	}
@@ -102,9 +92,7 @@ read_args ( int argc, char *argv[] )
 	sim::thtd=atof(argv[6]);
 	sim::rless=atoi(argv[7]);
 #ifndef TOROIDAL
-#ifndef SIMPLE
 	sim::l=atoi(argv[8]);
-#endif
 #endif
 	return 0;
 }		/* -----  end of function read_args  ----- */
@@ -180,9 +168,7 @@ create_folder ( )
 	params << "thtd:"<< sim::thtd << std::endl;
 	params << "rless:"<< sim::rless << std::endl;
 #ifndef TOROIDAL
-#ifndef SIMPLE
 	params << "l:"<< sim::l << std::endl;
-#endif
 #endif
 	params.close();
 
@@ -194,20 +180,15 @@ create_folder ( )
 	summary << "rmin:" << sim::rmin << ", ";
 	summary << "rless:" << sim::rless << ", ";
 #ifndef TOROIDAL
-#ifndef SIMPLE
 	summary << "l:" << sim::rless << ", ";
 #endif
-#endif
-	//Specify compiler build options, T=TOROIDAL, O=PUREOHM, S=SIMPLE
+	//Specify compiler build options, T=TOROIDAL, O=PUREOHM
 	summary << "COMP_OPT:";
 #ifdef TOROIDAL
 	summary << "T";
 #endif
 #ifdef PUREOHM
 	summary << "O";
-#endif
-#ifdef SIMPLE
-	summary << "S";
 #endif
 	summary << "." << endl;
 	summary.close();
@@ -238,9 +219,7 @@ print_header ( )
 	cout << "-Ratio of hall to dissipative timescales: "<< sim::thtd << endl;
 	cout << "-Radial points excluded in beta calculations: "<< sim::rless << endl;
 #ifndef TOROIDAL
-#ifndef SIMPLE
 	cout << "-Multipoles used for external field: "<< sim::l << endl;
-#endif
 #endif
 	cout << endl;
 	cout << "Results stored in folder results_" << timeStream.str() << endl;
@@ -263,13 +242,10 @@ create_integrals_file ( )
 #ifdef TOROIDAL
 	integrals_file << "#t F_t E_T" << endl;
 #else
-	integrals_file << "#t F_t E_T E_P" ;
-#ifndef SIMPLE
-	integrals_file << " E_Pe";
+	integrals_file << "#t F_t E_T E_Pi E_Pe" ;
 	for(int n=1;n<=sim::l;n++){
 		integrals_file << " E_" << n;
 	}
-#endif
 	integrals_file << endl;
 #endif
 	return;
@@ -287,14 +263,11 @@ log_integrals_file ( double t, double *integrals )
 #ifdef TOROIDAL
 	integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
 #else
-	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2];
-#ifndef SIMPLE
-	//Log data of poloidal energy outside the star
-	integrals_file << " " << integrals[3];
+	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << " " << integrals[3];
+	//Log energy of multipoles outside the star
 	for(int n=1;n<=sim::l;n++){
 		integrals_file << " " << integrals[3+n];
 	}
-#endif
 	integrals_file << endl;
 #endif
 	//Release memory

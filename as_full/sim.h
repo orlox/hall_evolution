@@ -36,10 +36,8 @@ extern double rmin;
 //will be solved by interpolation, and not direct calculation through the time evolution equation.
 extern int rless;
 #ifndef TOROIDAL
-#ifndef SIMPLE
 //Number of points used for the multipole fit outside the star
 extern int l;
-#endif
 #endif
 //size of spatial steps.
 extern double dr;
