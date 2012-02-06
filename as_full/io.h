@@ -38,6 +38,8 @@ void log_field(int k);
 //Prints info relating to a blowup
 void report_blowup(int k,int i,int j);
 //Prints info on the termination of the program
+void report_progress(int k);
+//Prints info on the termination of the program
 void report_completion(int info);
 }
 #endif

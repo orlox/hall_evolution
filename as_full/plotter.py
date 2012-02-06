@@ -151,7 +151,7 @@ while 1:
     figtext(0.3, 0.95, "Angular steps: "+str(thNum))
     figtext(0.55, 0.95, "Time step: "+str(dt))
     figtext(0.75, 0.95, "t_h/t_d: "+str(thtd))
-    figtext(0.92, 0.95, "t: "+str(k*dt))
+    figtext(0.92, 0.95, "t: "+str((k-steps_less)*dt))
     #create plot
     a=fig.add_subplot(1,2,1)
     plt.imshow(ZA.T,extent=[0,1,-1,1],origin="lower")

@@ -230,22 +230,17 @@ simulate ( )
 	double dBr=0;
 	double dBth=0;
 	for(int k=0;k<=tNum;k++){
-		//Log data if k is multiple of plotSteps
-		if(k%plotSteps==0){
-			//Do not log data if we are still evolving pure Ohm
-			if(k>=steps_less){
-				t=k*dt;
-				//Log integrated quantities
-				io::log_integrals_file(t,solve_integrals());
-				//Log complete profiles for A and B
-				io::log_field(k);
-				//No need to keep simulating if no output will be produced in next steps
-				if(k+plotSteps>tNum){
-					break;
-				}
-				std::cout << k << "/" << tNum << std::endl;
-			}else{
-				std::cout << k << "/" << tNum << "\t HALL NOT APPLIED" << std::endl;
+		io::report_progress(k);
+		//Log data if k is multiple of plotSteps. Do not log if we are evolving pure Ohm
+		if(k%plotSteps==0 && k>=steps_less){
+			t=(k-sim::steps_less)*dt;
+			//Log integrated quantities
+			io::log_integrals_file(t,solve_integrals());
+			//Log complete profiles for A and B
+			io::log_field(k);
+			//No need to keep simulating if no output will be produced in next steps
+			if(k+plotSteps>tNum){
+				break;
 			}
 		}
 #ifndef TOROIDAL

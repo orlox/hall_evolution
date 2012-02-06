@@ -21,6 +21,7 @@
 #include	<fstream>
 #include	<string>
 #include	<time.h>
+#include	<math.h>
 #include	<stdlib.h>
 #include	<signal.h>
 #include	"string.h"
@@ -92,6 +93,7 @@ read_args ( int argc, char *argv[] )
 	//Store values for simulation
 	sim::rNum=atoi(argv[1]);
 	sim::thNum=atoi(argv[2]);
+	sim::dt=atof(argv[3]);
 	sim::tNum=atoi(argv[4]);
 	sim::plotSteps=atoi(argv[5]);
 	sim::thtd=atof(argv[6]);
@@ -233,9 +235,7 @@ print_header ( )
 	cout << "-Multipoles used for external field: "<< sim::l << endl;
 #endif
 	cout << endl;
-	cout << "Results stored in folder results_"<< results_folder << "/" << timeStream.str() << "_" << description << endl;
-	cout << endl;
-	cout << "Beggining simulation" << endl;
+	cout << "Results stored in folder results_"<< results_folder << "/" << timeStream.str() << "_" << description << endl << endl;
 	return;
 }		/* -----  end of function print_header  ----- */
 
@@ -352,9 +352,40 @@ log_field ( int k )
 	void
 report_blowup ( int k, int i, int j )
 {
-	cerr << "Blew up at step " << k << "in place " << i << "," << j << endl; 
+	cerr << endl << endl << "Blew up at step " << k << "in place " << i << "," << j << endl; 
 	return;
 }		/* -----  end of function report_blowup  ----- */
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  report_progress
+ *  Description:  give information on progress of the simulation. Receives as argument the current timestep
+ * =====================================================================================
+ */
+	void
+report_progress ( int k )
+{
+	stringstream info;
+	//Determine difference in number size between the current timestep and the total number to be run
+	int zeros=int(log10(sim::tNum))-int(log10(k));
+	//Carriage return to rewrite same line
+	info << "\r";
+	//Prepend zeros
+	for(int i=0;i<zeros;i++)
+		info << "0";
+	//Print current timestep
+	info << k << "/" << sim::tNum << "\t\t";
+	//Output additional info
+	if(k<sim::steps_less){
+		info << "HALL IGNORED";
+	}else{
+		info << "t/t_h=" << (k-sim::steps_less)*sim::dt << "\tt/t_d=" << (k-sim::steps_less)*sim::dt*sim::thtd;
+	}
+	cout << info.str();
+	
+	return;
+}		/* -----  end of function report_progress  ----- */
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -367,11 +398,11 @@ report_blowup ( int k, int i, int j )
 report_completion ( int info )
 {
 	if(info==SIGINT){
-		cout<<"Interrupt signal captured!"<<endl;
+		cout<<endl<<endl<<"Interrupt signal captured!"<<endl;
 	}else if(info==SIGUSR1){
-		cout<<"Couldn't complete simulation!"<<endl;
+		cout<<endl<<endl<<"Couldn't complete simulation!"<<endl;
 	}else if(info==SIGUSR2){
-		cout<<"Simulation completed normally"<<endl;
+		cout<<endl<<endl<<"Simulation completed normally"<<endl;
 	}
 	exit(info);
 	return;
