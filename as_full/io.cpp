@@ -54,7 +54,7 @@ read_args ( int argc, char *argv[] )
 	{
 		cerr<<"ERROR: Not enough arguments provided"<<endl;
 		cerr<<"usage is:"<<endl;
-		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <rless(int)>";
+		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <steps_less(int)>";
 #ifndef TOROIDAL
 		cerr<<" <l(int)>";
 #endif
@@ -77,7 +77,7 @@ read_args ( int argc, char *argv[] )
 	{
 		cerr<<"ERROR: Arguments not in the right format"<<endl;
 		cerr<<"usage is:"<<endl;
-		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <rless(int)>";
+		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <steps_less(int)>";
 #ifndef TOROIDAL
 		cerr<<" <l(int)>";
 #endif
@@ -90,7 +90,7 @@ read_args ( int argc, char *argv[] )
 	sim::tNum=atoi(argv[4]);
 	sim::plotSteps=atoi(argv[5]);
 	sim::thtd=atof(argv[6]);
-	sim::rless=atoi(argv[7]);
+	sim::steps_less=atoi(argv[7]);
 #ifndef TOROIDAL
 	sim::l=atoi(argv[8]);
 #endif
@@ -166,7 +166,7 @@ create_folder ( )
 	params << "plotSteps:"<< sim::plotSteps << std::endl;
 	params << "rmin:"<< sim::rmin << std::endl;
 	params << "thtd:"<< sim::thtd << std::endl;
-	params << "rless:"<< sim::rless << std::endl;
+	params << "steps_less:"<< sim::steps_less << std::endl;
 #ifndef TOROIDAL
 	params << "l:"<< sim::l << std::endl;
 #endif
@@ -178,7 +178,7 @@ create_folder ( )
 	summary << sim::rNum << "x" << sim::thNum << "x" << sim::dt << ", ";
 	summary << "thtd:" << sim::thtd << ", ";
 	summary << "rmin:" << sim::rmin << ", ";
-	summary << "rless:" << sim::rless << ", ";
+	summary << "steps_less:" << sim::steps_less << ", ";
 #ifndef TOROIDAL
 	summary << "l:" << sim::l << ", ";
 #endif
@@ -217,7 +217,7 @@ print_header ( )
 	cout << "-Save output every "<< sim::plotSteps << " steps" << endl;
 	cout << "-Minimun radius: "<< sim::rmin << endl;
 	cout << "-Ratio of hall to dissipative timescales: "<< sim::thtd << endl;
-	cout << "-Radial points excluded in beta calculations: "<< sim::rless << endl;
+	cout << "-Timesteps with only Ohmic dissipation: "<< sim::steps_less << endl;
 #ifndef TOROIDAL
 	cout << "-Multipoles used for external field: "<< sim::l << endl;
 #endif

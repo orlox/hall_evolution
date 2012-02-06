@@ -45,6 +45,8 @@ data=params.readline().split(":");
 rmin=float(data[1])
 data=params.readline().split(":");
 thtd=float(data[1])
+data=params.readline().split(":");
+steps_less=int(data[1])
 params.close()
 
 #solve values of dr and dth
@@ -84,7 +86,7 @@ for xvalue in x :
     j=0
     i+=1
 
-k=0
+k=steps_less
 while 1:
     #do not plot this timestep if plot exists
     #add zeros to the number of the plot, so they are ordered appropately

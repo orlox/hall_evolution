@@ -32,9 +32,9 @@ extern double **A;
 #endif
 //minimun radius of the shell containing the magnetic field.
 extern double rmin;
-//Number of points in the radial direction both at the surface and the inner boundary for which the values
-//will be solved by interpolation, and not direct calculation through the time evolution equation.
-extern int rless;
+//Number of timesteps for which only Ohmic dissipation will be in effect. This enhances
+//stability significantly.
+extern int steps_less;
 #ifndef TOROIDAL
 //Number of points used for the multipole fit outside the star
 extern int l;

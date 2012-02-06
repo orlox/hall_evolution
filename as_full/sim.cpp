@@ -52,9 +52,9 @@ double **res_thflux;
 double *sines;
 //Minimun radius of the shell containing the magnetic field.
 double rmin;
-//Number of points in the radial direction both at the surface and the inner boundary for which the values
-//will be solved by interpolation, and not direct calculation through the time evolution equation.
-int rless;
+//Number of timesteps for which only Ohmic dissipation will be in effect. This enhances
+//stability significantly.
+int steps_less;
 #ifndef TOROIDAL
 //Number of points used for the multipole fit outside the star
 int l;
@@ -85,11 +85,11 @@ initial_conditions ( )
 {
 	//Initialize arrays with appropiate sizes
 #ifndef TOROIDAL
-	A=new double*[rNum];
+	A=new double*[rNum+1];
 	a=new double[l];
 #endif
-	B=new double*[rNum];
-	for(int i=0;i<rNum;i++){
+	B=new double*[rNum+1];
+	for(int i=0;i<rNum+1;i++){
 		B[i]=new double[thNum];
 #ifndef TOROIDAL
 		A[i]=new double[thNum];
@@ -104,7 +104,7 @@ initial_conditions ( )
 	dth=Pi/(thNum-1);
 
 	//Store the initial values of physical quantities
-	for(int i=1;i<rNum-1;i++){
+	for(int i=1;i<rNum;i++){
 		r=rmin+i*dr;
 		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
@@ -121,6 +121,7 @@ initial_conditions ( )
 	}
 	for(int j=0;j<thNum;j++){
 		B[0][j]=B[rNum-1][j]=0;
+		B[rNum][j]=-B[rNum-2][j];
 	}
 #ifndef TOROIDAL
 	//Set boundary condition for poloidal fields
@@ -128,7 +129,7 @@ initial_conditions ( )
 		A[i][0]=A[i][thNum-1]=0;
 	}
 	for(int j=0;j<thNum;j++){
-		A[0][j]=A[rNum-1][j]=0;
+		A[0][j]=0;
 	}
 #endif
 
@@ -154,15 +155,15 @@ solve_repeated_values ( )
 {
 	//Initialize arrays with appropiate sizes
 #ifndef PUREOHM
-	hall_term_A=new double*[rNum];
-	hall_rflux=new double*[rNum];
-	hall_thflux=new double*[rNum];
+	hall_term_A=new double*[rNum+1];
+	hall_rflux=new double*[rNum+1];
+	hall_thflux=new double*[rNum+1];
 #endif
-	res_term_A=new double*[rNum];
-	res_rflux=new double*[rNum];
-	res_thflux=new double*[rNum];
+	res_term_A=new double*[rNum+1];
+	res_rflux=new double*[rNum+1];
+	res_thflux=new double*[rNum+1];
 	sines=new double[thNum];
-	for(int i=0;i<rNum;i++){
+	for(int i=0;i<rNum+1;i++){
 #ifndef PUREOHM
 		hall_term_A[i]=new double[thNum];
 		hall_rflux[i]=new double[thNum];
@@ -177,7 +178,7 @@ solve_repeated_values ( )
 		th=j*dth;
 		sines[j]=sin(th);
 	}
-	for(int i=0;i<rNum-1;i++){
+	for(int i=0;i<rNum;i++){
 		r=rmin+i*dr;
 		for(int j=0;j<thNum-1;j++){
 			th=j*dth;
@@ -196,7 +197,7 @@ solve_repeated_values ( )
 	boundary_factors=new double[l];
 	legendre_comb=new double*[l];
 	for(int n=0;n<l;n++){
-		boundary_factors[n]=dth/12*(2*n+3)*(n+1)/(n+2)*pow(1-dr,n+1);
+		boundary_factors[n]=-dr*dth/6*(2*n+3)*pow(n+1,2)/(n+2);
 		legendre_comb[n]=new double[thNum];
 		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
@@ -231,20 +232,25 @@ simulate ( )
 	for(int k=0;k<=tNum;k++){
 		//Log data if k is multiple of plotSteps
 		if(k%plotSteps==0){
-			t=k*dt;
-			//Log integrated quantities
-			io::log_integrals_file(t,solve_integrals());
-			//Log complete profiles for A and B
-			io::log_field(k);
-			//No need to keep simulating if no output will be produced in next steps
-			if(k+plotSteps>tNum){
-				break;
+			//Do not log data if we are still evolving pure Ohm
+			if(k>=steps_less){
+				t=k*dt;
+				//Log integrated quantities
+				io::log_integrals_file(t,solve_integrals());
+				//Log complete profiles for A and B
+				io::log_field(k);
+				//No need to keep simulating if no output will be produced in next steps
+				if(k+plotSteps>tNum){
+					break;
+				}
+				std::cout << k << "/" << tNum << std::endl;
+			}else{
+				std::cout << k << "/" << tNum << "\t HALL NOT APPLIED" << std::endl;
 			}
-			std::cout << k << "/" << tNum << std::endl;
 		}
 #ifndef TOROIDAL
 		//Update poloidal field function
-		for(int i=1;i<rNum-1;i++){
+		for(int i=1;i<rNum;i++){
 			r=rmin+i*dr;
 			for(int j=1;j<thNum-1;j++){
 				th=j*dth;
@@ -253,8 +259,11 @@ simulate ( )
 				//Evolve poloidal field function at point
 				Aaux[i][j]=A[i][j]+res_term_A[i][j]*gsA[i][j];
 #ifndef PUREOHM
-				Aaux[i][j]+= ((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
-							 -(B[i+1][j]-B[i-1][j])*(A[i][j+1]-A[i][j-1]))*hall_term_A[i][j];
+				//Do not evolve with hall for the first "steps_less" timesteps
+				if(k>=steps_less){
+					Aaux[i][j]+= ((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
+								 -(B[i+1][j]-B[i-1][j])*(A[i][j+1]-A[i][j-1]))*hall_term_A[i][j];
+				}
 #endif
 			}
 		}
@@ -267,28 +276,34 @@ simulate ( )
 				if(j!=0){
 					dBr=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
 #ifndef PUREOHM
-					dBr+=hall_rflux[i][j]
-						*(B[i][j]+B[i+1][j])
-						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+					//Do not evolve with hall for the first "steps_less" timesteps
+					if(k>=steps_less){
+						dBr+=hall_rflux[i][j]
+							*(B[i][j]+B[i+1][j])
+							*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
 #ifndef TOROIDAL
-					dBr+=hall_rflux[i][j]
-						*(gsA[i][j]+gsA[i+1][j])
-						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
+						dBr+=hall_rflux[i][j]
+							*(gsA[i][j]+gsA[i+1][j])
+							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
 #endif
+					}
 #endif
 				}
 				//Solve theta fluxes on B/sin(th)
 				if(i!=0){
 					dBth=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
 #ifndef PUREOHM
-					dBth+=hall_thflux[i][j]
-						*(B[i][j]+B[i][j+1])
-						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+					//Do not evolve with hall for the first "steps_less" timesteps
+					if(k>=steps_less){
+						dBth+=hall_thflux[i][j]
+							*(B[i][j]+B[i][j+1])
+							*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
 #ifndef TOROIDAL
-					dBth+=hall_thflux[i][j]
-						*(gsA[i][j]+gsA[i][j+1])
-						*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
+						dBth+=hall_thflux[i][j]
+							*(gsA[i][j]+gsA[i][j+1])
+							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
 #endif
+					}
 #endif
 				}
 				//Add flux at point, substract it from following points
@@ -298,7 +313,7 @@ simulate ( )
 			}
 		}
 		//Pass values from auxiliary array Baux and Aaux
-		for(int i=1;i<rNum-1;i++){
+		for(int i=1;i<rNum;i++){
 			for(int j=1;j<thNum-1;j++){
 				//Check for blowups, exit program if that happens
 				if(isinf(Baux[i][j])
@@ -315,26 +330,11 @@ simulate ( )
 #endif
 			}
 		}
-		//Solve B values close to the inner shell through 3-point interpolation
-		double a1,a2;
-		double f1,f2;
-		for(int j=1;j<thNum-1;j++){
-			f1=B[rless+1][j];
-			f2=B[rless+2][j];
-			a1=((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
-			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
-			for(int n=1;n<=rless;n++){
-				r=n*dr;
-				B[n][j]=a1*r+a2*pow(r,2);
-			}
-			f1=B[rNum-1-rless-1][j];
-			f2=B[rNum-1-rless-2][j];
-			a1=-((f1-f2)*pow(rless,2)+(4*f1-2*f2)*rless-f2+4*f1)/dr/(pow(rless,2)+3*rless+2);
-			a2=-((f1-f2)*rless-f2+2*f1)/pow(dr,2)/(pow(rless,2)+3*rless+2);
-			for(int n=1;n<=rless;n++){
-				r=-n*dr;
-				B[rNum-1-n][j]=a1*r+a2*pow(r,2);
-			}
+		//Fix beta value just outside the star so the numerical radial  derivative at the surface corresponds
+		//to solving it backwards (i.e. using only the point at the surface and the one just below)
+		for(int j=0;j<thNum;j++){
+			B[0][j]=B[rNum-1][j]=0;
+			B[rNum][j]=-B[rNum-2][j];
 		}
 #ifndef TOROIDAL
 		solve_A_boundary();
@@ -422,31 +422,24 @@ solve_A_boundary ( )
 	for(int n=0;n<l;n++){
 		a[n]=0;
 		for(int j=1;j<thNum-2;j++){
-			//th=j*dth;
-			//f1=A[rNum-2][j]*(cos(j*dth)*P[n+1][j]-P[n][j])/sin(j*dth);
-			f1=A[rNum-2][j]*legendre_comb[n][j];
+			f1=A[rNum-1][j]*legendre_comb[n][j];
 			f0=f2=0;
-			if(j!=thNum-2){
-				//f2=A[rNum-2][j+1]*(cos(th+dth)*P[n+1][j+1]-P[n][j+1])/sin(th+dth);
-				f2=A[rNum-2][j+1]*legendre_comb[n][j+1];
+			if(j!=thNum-1){
+				f2=A[rNum-1][j+1]*legendre_comb[n][j+1];
 			}
 			if(j!=1){
-				//f0=A[rNum-2][j-1]*(cos(th-dth)*P[n+1][j-1]-P[n][j-1])/sin(th-dth);
-				f0=A[rNum-2][j-1]*legendre_comb[n][j-1];
+				f0=A[rNum-1][j-1]*legendre_comb[n][j-1];
 			}
-			//a[n]+=(f0+4*f1+f2)*dth/3;
 			a[n]+=(f0+4*f1+f2);
 		}
-		//a[n]=a[n]*2*Pi*pow(1-dr,n+1)/(n+2)*sqrt((2*n+3)/4.0/Pi)*(n+1)/2;
 	}
 	for(int j=1;j<thNum-1;j++){
-		A[rNum-1][j]=0;
+		A[rNum][j]=A[rNum-1][j];
 	}
 	//Permorm sumation
 	for(int n=0;n<l;n++){
 		for(int j=1;j<thNum-1;j++){
-			//A[rNum-1][j]+=a[n]*sqrt((2*n+3)/4.0/Pi)*(cos(j*dth)*P[n+1][j]-P[n][j]);
-			A[rNum-1][j]+=a[n]*boundary_factors[n]*legendre_comb[n][j]*sines[j];
+			A[rNum][j]+=a[n]*boundary_factors[n]*legendre_comb[n][j]*sines[j];
 		}
 	}
 	return;
@@ -464,7 +457,7 @@ solve_A_boundary ( )
 	void
 release_memory ( int info )
 {
-	for(int i=0;i<rNum;i++){
+	for(int i=0;i<rNum+1;i++){
 		delete[] B[i];
 		B[i]=NULL;
 #ifndef PUREOHM
