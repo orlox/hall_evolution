@@ -33,6 +33,11 @@ namespace io{
 stringstream timeStream;
 //std::ofstream which points to the file where integrated quantities are stored
 ofstream integrals_file;
+//user specified folder name to use (results_ is prepended to this)
+string results_folder;
+//user specified description to use
+string description;
+
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -47,9 +52,9 @@ read_args ( int argc, char *argv[] )
 {
 	//Check if correct number of arguments is provided
 #ifdef TOROIDAL
-	if(argc!=8)
+	if(argc!=10)
 #else
-	if(argc!=9)
+	if(argc!=11)
 #endif
 	{
 		cerr<<"ERROR: Not enough arguments provided"<<endl;
@@ -58,6 +63,7 @@ read_args ( int argc, char *argv[] )
 #ifndef TOROIDAL
 		cerr<<" <l(int)>";
 #endif
+		cerr<<" <folder(string_without_spaces)> <description(string_without_spaces)>";
 		cerr<<endl;
 		return 1;
 	}
@@ -86,13 +92,17 @@ read_args ( int argc, char *argv[] )
 	//Store values for simulation
 	sim::rNum=atoi(argv[1]);
 	sim::thNum=atoi(argv[2]);
-	sim::dt=atof(argv[3]);
 	sim::tNum=atoi(argv[4]);
 	sim::plotSteps=atoi(argv[5]);
 	sim::thtd=atof(argv[6]);
 	sim::steps_less=atoi(argv[7]);
 #ifndef TOROIDAL
 	sim::l=atoi(argv[8]);
+	results_folder=argv[9];
+	description=argv[10];
+#else
+	results_folder=argv[8];
+	description=argv[9];
 #endif
 	return 0;
 }		/* -----  end of function read_args  ----- */
@@ -153,11 +163,11 @@ create_folder ( )
 	//Store timestamp, will be needed also later to access folder
 	timeStream << time(0);
 	//Create directory. THIS WONT WORK ON WINDOWS!!
-	string mkdir="mkdir results_"+timeStream.str();
+	string mkdir="mkdir -p results_"+results_folder+"/"+timeStream.str()+"_"+description;
 	system(mkdir.c_str());
 	//Create params.dat file, where simulation parameters are logged
 	ofstream params;
-	string filename="results_"+timeStream.str()+"/params.dat";
+	string filename="results_"+results_folder+"/"+timeStream.str()+"_"+description+"/params.dat";
 	params.open(filename.c_str());
 	params << "rNum:"<< sim::rNum << std::endl;
 	params << "thNum:"<< sim::thNum << std::endl;
@@ -172,9 +182,10 @@ create_folder ( )
 #endif
 	params.close();
 
-	//Append line with summary to results_summary
-	ofstream summary ("results_summary",ios::app);
-	summary << "results_" << timeStream.str() << ": ";
+	//Append line with summary to a file named "summary"
+	filename="results_"+results_folder+"/summary";
+	ofstream summary (filename.c_str(),ios::app);
+	summary << timeStream.str() << "_" << description << " : ";
 	summary << sim::rNum << "x" << sim::thNum << "x" << sim::dt << ", ";
 	summary << "thtd:" << sim::thtd << ", ";
 	summary << "rmin:" << sim::rmin << ", ";
@@ -222,7 +233,7 @@ print_header ( )
 	cout << "-Multipoles used for external field: "<< sim::l << endl;
 #endif
 	cout << endl;
-	cout << "Results stored in folder results_" << timeStream.str() << endl;
+	cout << "Results stored in folder results_"<< results_folder << "/" << timeStream.str() << "_" << description << endl;
 	cout << endl;
 	cout << "Beggining simulation" << endl;
 	return;
@@ -237,7 +248,7 @@ print_header ( )
 	void
 create_integrals_file ( )
 {
-	string filename="results_"+timeStream.str()+"/integrals.dat";
+	string filename="results_"+results_folder+"/"+timeStream.str()+"_"+description+"/integrals.dat";
 	integrals_file.open(filename.c_str());
 #ifdef TOROIDAL
 	integrals_file << "#t F_t E_T" << endl;
@@ -301,7 +312,7 @@ log_field ( int k )
 #ifndef TOROIDAL
 	//Construct filename for alpha log file, and open it
 	stringstream AStream;
-	AStream << "results_" << timeStream.str() << "/A_" << k;
+	AStream << "results_" << results_folder << "/" << timeStream.str() << "_" << description << "/A_" << k;
 	string filenameA=AStream.str();
 	ofstream resultsA;
 	resultsA.open(filenameA.c_str());
@@ -315,7 +326,7 @@ log_field ( int k )
 #endif
 	//Construct filename for alpha log file, and open it
 	stringstream BStream;
-	BStream << "results_" << timeStream.str() << "/B_" << k;
+	BStream << "results_" << results_folder << "/" << timeStream.str() << "_" << description << "/B_" << k;
 	string filenameB=BStream.str();
 	ofstream resultsB;
 	resultsB.open(filenameB.c_str());
