@@ -53,14 +53,14 @@ read_args ( int argc, char *argv[] )
 {
 	//Check if correct number of arguments is provided
 #ifdef TOROIDAL
-	if(argc!=10)
+	if(argc!=9)
 #else
-	if(argc!=11)
+	if(argc!=10)
 #endif
 	{
 		cerr<<"ERROR: Not enough arguments provided"<<endl;
 		cerr<<"usage is:"<<endl;
-		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <steps_less(int)>";
+		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)>";
 #ifndef TOROIDAL
 		cerr<<" <l(int)>";
 #endif
@@ -75,16 +75,15 @@ read_args ( int argc, char *argv[] )
 			!io::is_float(argv[3])||
 			!io::is_integer(argv[4])||
 			!io::is_integer(argv[5])||
-			!io::is_float(argv[6])||
-			!io::is_integer(argv[7])
+			!io::is_float(argv[6])
 #ifndef TOROIDAL
-			||!io::is_integer(argv[8])
+			||!io::is_integer(argv[7])
 #endif
 			)
 	{
 		cerr<<"ERROR: Arguments not in the right format"<<endl;
 		cerr<<"usage is:"<<endl;
-		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)> <steps_less(int)>";
+		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)>";
 #ifndef TOROIDAL
 		cerr<<" <l(int)>";
 #endif
@@ -97,14 +96,13 @@ read_args ( int argc, char *argv[] )
 	sim::tNum=atoi(argv[4]);
 	sim::plotSteps=atoi(argv[5]);
 	sim::thtd=atof(argv[6]);
-	sim::steps_less=atoi(argv[7]);
 #ifndef TOROIDAL
-	sim::l=atoi(argv[8]);
-	results_folder=argv[9];
-	description=argv[10];
-#else
+	sim::l=atoi(argv[7]);
 	results_folder=argv[8];
 	description=argv[9];
+#else
+	results_folder=argv[7];
+	description=argv[8];
 #endif
 	return 0;
 }		/* -----  end of function read_args  ----- */
@@ -178,7 +176,6 @@ create_folder ( )
 	params << "plotSteps:"<< sim::plotSteps << std::endl;
 	params << "rmin:"<< sim::rmin << std::endl;
 	params << "thtd:"<< sim::thtd << std::endl;
-	params << "steps_less:"<< sim::steps_less << std::endl;
 #ifndef TOROIDAL
 	params << "l:"<< sim::l << std::endl;
 #endif
@@ -191,7 +188,6 @@ create_folder ( )
 	summary << sim::rNum << "x" << sim::thNum << "x" << sim::dt << ", ";
 	summary << "thtd:" << sim::thtd << ", ";
 	summary << "rmin:" << sim::rmin << ", ";
-	summary << "steps_less:" << sim::steps_less << ", ";
 #ifndef TOROIDAL
 	summary << "l:" << sim::l << ", ";
 #endif
@@ -230,7 +226,6 @@ print_header ( )
 	cout << "-Save output every "<< sim::plotSteps << " steps" << endl;
 	cout << "-Minimun radius: "<< sim::rmin << endl;
 	cout << "-Ratio of hall to dissipative timescales: "<< sim::thtd << endl;
-	cout << "-Timesteps with only Ohmic dissipation: "<< sim::steps_less << endl;
 #ifndef TOROIDAL
 	cout << "-Multipoles used for external field: "<< sim::l << endl;
 #endif
@@ -369,20 +364,14 @@ report_progress ( int k )
 	stringstream info;
 	//Determine difference in number size between the current timestep and the total number to be run
 	int zeros=int(log10(sim::tNum))-int(log10(k));
-	//Carriage return to rewrite same line
-	info << endl;
 	//Prepend zeros
 	for(int i=0;i<zeros;i++)
 		info << "0";
 	//Print current timestep
-	info << k << "/" << sim::tNum << "\t\t";
-	//Output additional info
-	if(k<sim::steps_less){
-		info << "HALL IGNORED";
-	}else{
-		info << "t/t_h=" << (k-sim::steps_less)*sim::dt << "\tt/t_d=" << (k-sim::steps_less)*sim::dt*sim::thtd;
-	}
-	cout << info.str();
+	info << k << "/" << sim::tNum << "     ";
+	//Print simulation time in hall and ohmic timescales
+	info << "t/t_h=" << k*sim::dt << "     t/t_d=" << k*sim::dt*sim::thtd;
+	cout << endl << info.str();
 	
 	return;
 }		/* -----  end of function report_progress  ----- */

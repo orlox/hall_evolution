@@ -32,9 +32,6 @@ extern double **A, **Aaux, **gsA;
 #endif
 //minimun radius of the shell containing the magnetic field.
 extern double rmin;
-//Number of timesteps for which only Ohmic dissipation will be in effect. This enhances
-//stability significantly.
-extern int steps_less;
 #ifndef TOROIDAL
 //Number of points used for the multipole fit outside the star
 extern int l;

@@ -45,8 +45,6 @@ data=params.readline().split(":");
 rmin=float(data[1])
 data=params.readline().split(":");
 thtd=float(data[1])
-data=params.readline().split(":");
-steps_less=int(data[1])
 params.close()
 
 #solve values of dr and dth
@@ -86,7 +84,7 @@ for xvalue in x :
     j=0
     i+=1
 
-k=steps_less
+k=0
 while 1:
     #do not plot this timestep if plot exists
     #add zeros to the number of the plot, so they are ordered appropately
@@ -151,7 +149,7 @@ while 1:
     figtext(0.3, 0.95, "Angular steps: "+str(thNum))
     figtext(0.55, 0.95, "Time step: "+str(dt))
     figtext(0.75, 0.95, "t_h/t_d: "+str(thtd))
-    figtext(0.92, 0.95, "t: "+str((k-steps_less)*dt))
+    figtext(0.92, 0.95, "t: "+str(k*dt))
     #create plot
     a=fig.add_subplot(1,2,1)
     plt.imshow(ZA.T,extent=[0,1,-1,1],origin="lower")

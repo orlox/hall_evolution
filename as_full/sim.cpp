@@ -53,9 +53,6 @@ double **res_thflux;
 double *sines, *cotans;
 //Minimun radius of the shell containing the magnetic field.
 double rmin;
-//Number of timesteps for which only Ohmic dissipation will be in effect. This enhances
-//stability significantly.
-int steps_less;
 #ifndef TOROIDAL
 //Number of points used for the multipole fit outside the star
 int l;
@@ -242,10 +239,10 @@ simulate ( )
 	time_t t1, t2;
 	time(&t1);
 	for(int k=0;k<=tNum;k++){
-		//Log data if k is multiple of plotSteps. Do not log if we are evolving pure Ohm
-		if(k%plotSteps==0 && k>=steps_less){
+		//Log data if k is multiple of plotSteps
+		if(k%plotSteps==0){
 			io::report_progress(k);
-			t=(k-sim::steps_less)*dt;
+			t=k*dt;
 			//Log integrated quantities
 			io::log_integrals_file(t,solve_integrals());
 			//Log complete profiles for A and B
@@ -324,11 +321,8 @@ solve_new_A ()
 			//Evolve poloidal field function at point
 			Aaux[i][j]=A[i][j]+res_term_A[i][j]*gsA[i][j];
 #ifndef PUREOHM
-			//Do not evolve with hall for the first "steps_less" timesteps
-//			if(k>=steps_less){
-				Aaux[i][j]+= ((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
-							 -(B[i+1][j]-B[i-1][j])*(A[i][j+1]-A[i][j-1]))*hall_term_A[i][j];
-//			}
+			Aaux[i][j]+= ((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
+						 -(B[i+1][j]-B[i-1][j])*(A[i][j+1]-A[i][j-1]))*hall_term_A[i][j];
 #endif
 		}
 	}
@@ -352,42 +346,30 @@ solve_new_B ()
 			if(j!=0){
 				dBr[i][j]=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
 #ifndef PUREOHM
-				//Do not evolve with hall for the first "steps_less" timesteps
-//				if(k>=steps_less){
-					dBr[i][j]+=hall_rflux[i][j]
-						*(B[i][j]+B[i+1][j])
-						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+				dBr[i][j]+=hall_rflux[i][j]
+					*(B[i][j]+B[i+1][j])
+					*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
 #ifndef TOROIDAL
-					dBr[i][j]+=hall_rflux[i][j]
-						*(gsA[i][j]+gsA[i+1][j])
-						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
+				dBr[i][j]+=hall_rflux[i][j]
+					*(gsA[i][j]+gsA[i+1][j])
+					*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
 #endif
-//				}
 #endif
 			}
 			//Solve theta fluxes on B/sin(th)
 			if(i!=0){
 				dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
 #ifndef PUREOHM
-				//Do not evolve with hall for the first "steps_less" timesteps
-//				if(k>=steps_less){
-					dBth[i][j]+=hall_thflux[i][j]
-						*(B[i][j]+B[i][j+1])
-						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+				dBth[i][j]+=hall_thflux[i][j]
+					*(B[i][j]+B[i][j+1])
+					*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
 #ifndef TOROIDAL
-					dBth[i][j]+=hall_thflux[i][j]
-						*(gsA[i][j]+gsA[i][j+1])
-						*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
+				dBth[i][j]+=hall_thflux[i][j]
+					*(gsA[i][j]+gsA[i][j+1])
+					*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
 #endif
-//				}
 #endif
 			}
-//			Baux[i][j]+=(dBr+dBth)*sines[j];
-//			Baux[i+1][j]+=B[i+1][j]-dBr*sines[j];
-//			Baux[i][j+1]-=dBth*sines[j+1];
-//			Baux[i][j]+=changeij;
-//			Baux[i+1][j]+=changei1j;
-//			Baux[i][j+1]+=changeij1;
 		}
 	}
 	return;
