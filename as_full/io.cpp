@@ -370,7 +370,7 @@ report_progress ( int k )
 	//Determine difference in number size between the current timestep and the total number to be run
 	int zeros=int(log10(sim::tNum))-int(log10(k));
 	//Carriage return to rewrite same line
-	info << "\r";
+	info << endl;
 	//Prepend zeros
 	for(int i=0;i<zeros;i++)
 		info << "0";

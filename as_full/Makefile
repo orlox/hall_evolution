@@ -6,9 +6,13 @@ endif
 ifdef o
 	PUREOHM=-DPUREOHM
 endif
+#if mp is defined, use openmp
+ifdef mp
+	OPENMP=-fopenmp
+endif
 #"all" compiles the code without debugging symbols.
 all:
-	g++ -Wall -lgsl $(TOROIDAL) $(PUREOHM) as_full.cpp io.cpp sim.cpp initial.cpp -o as_full_run
+	g++ $(OPENMP) -Wall -lgsl $(TOROIDAL) $(PUREOHM) as_full.cpp io.cpp sim.cpp initial.cpp -o as_full_run
 #"the same as all, but with debug symbols"
 dall:
-	g++ -g -Wall -lgsl as_full.cpp io.cpp sim.cpp initial.cpp -o as_full_run
+	g++ $(OPENMP) -g -Wall -lgsl as_full.cpp io.cpp sim.cpp initial.cpp -o as_full_run

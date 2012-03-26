@@ -26,9 +26,9 @@ extern int tNum;
 extern int plotSteps;
 extern double thtd;
 //physical values of functions defining the magnetic field.
-extern double **B;
+extern double **B, **dBr, **dBth;
 #ifndef TOROIDAL
-extern double **A;
+extern double **A, **Aaux, **gsA;
 #endif
 //minimun radius of the shell containing the magnetic field.
 extern double rmin;
@@ -48,6 +48,10 @@ void initial_conditions();
 void solve_repeated_values();
 //function that performs the simulation
 int simulate();
+//function that solves new values of A
+void solve_new_A();
+//function that solves new values of B
+void solve_new_B();
 //function that solves integrated quantities
 double* solve_integrals();
 //function that solves integrated quantities

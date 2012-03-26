@@ -17,6 +17,7 @@
  */
 #include <iostream>
 #include <stdlib.h>
+#include <time.h>
 #include "math.h"
 #include "sim.h"
 #include "io.h"
@@ -31,10 +32,10 @@ int tNum;
 int plotSteps;
 double thtd;
 //Values of the function beta on the 2-d grid.
-double **B;
+double **B, **dBr, **dBth;
 #ifndef TOROIDAL
 //Values of the function alpha on the 2-d grid
-double **A;
+double **A, **Aaux, **gsA;
 #endif
 //Arrays that contain the precalculated quantities neccesary to solve evolution of A.
 double **res_term_A;
@@ -48,8 +49,8 @@ double **hall_thflux;
 #endif
 double **res_rflux;
 double **res_thflux;
-//Sines precalculated at each point in the grid
-double *sines;
+//Sines and cotans precalculated at each point in the grid
+double *sines, *cotans;
 //Minimun radius of the shell containing the magnetic field.
 double rmin;
 //Number of timesteps for which only Ohmic dissipation will be in effect. This enhances
@@ -61,9 +62,10 @@ int l;
 //Values of the coefficients that give the poloidal field outside the star.
 double *a;
 //Repeated l dependent values in the resolution of the multipole fit.
-double *boundary_factors;
-//Repeated l and th dependent values that are solved in term of combinations Legendre polynomials.
+double *boundary_factors1, *boundary_factors2;
+//Repeated l and th dependent values that are solved in term of combinations Legendre polynomials. This is solved in the grid, and midpoint, so two arrays are required.
 double **legendre_comb;
+double **legendre_comb_mid;
 //Auxiliary variables used in function sim::solve_A_boundary to integrate the multipole coefficients
 double f0,f1,f2;
 #endif
@@ -86,13 +88,21 @@ initial_conditions ( )
 	//Initialize arrays with appropiate sizes
 #ifndef TOROIDAL
 	A=new double*[rNum+1];
+	Aaux=new double*[rNum+1];
+	gsA=new double*[rNum+1];
 	a=new double[l];
 #endif
 	B=new double*[rNum+1];
+	dBr=new double*[rNum+1];
+	dBth=new double*[rNum+1];
 	for(int i=0;i<rNum+1;i++){
 		B[i]=new double[thNum];
+		dBr[i]=new double[thNum];
+		dBth[i]=new double[thNum];
 #ifndef TOROIDAL
 		A[i]=new double[thNum];
+		Aaux[i]=new double[thNum];
+		gsA[i]=new double[thNum];
 #endif
 	}
 
@@ -163,6 +173,7 @@ solve_repeated_values ( )
 	res_rflux=new double*[rNum+1];
 	res_thflux=new double*[rNum+1];
 	sines=new double[thNum];
+	cotans=new double[thNum];
 	for(int i=0;i<rNum+1;i++){
 #ifndef PUREOHM
 		hall_term_A[i]=new double[thNum];
@@ -177,6 +188,7 @@ solve_repeated_values ( )
 	for(int j=1;j<thNum-1;j++){
 		th=j*dth;
 		sines[j]=sin(th);
+		cotans[j]=cos(th)/sin(th);
 	}
 	for(int i=0;i<rNum;i++){
 		r=rmin+i*dr;
@@ -194,14 +206,19 @@ solve_repeated_values ( )
 	}
 	//Solve common terms involved in resolution of the multipole fit outside the star
 #ifndef TOROIDAL
-	boundary_factors=new double[l];
+	boundary_factors1=new double[l];
+	boundary_factors2=new double[l];
 	legendre_comb=new double*[l];
+	legendre_comb_mid=new double*[l];
 	for(int n=0;n<l;n++){
-		boundary_factors[n]=-dr*dth/6*(2*n+3)*pow(n+1,2)/(n+2);
+		boundary_factors1[n]=(n+1.0)/(n+2.0)*sqrt(Pi*(2*n+3))/2*dth;
+		boundary_factors2[n]=-2*dr*(n+1)*sqrt((2*n+3)/(4*Pi));
 		legendre_comb[n]=new double[thNum];
-		for(int j=1;j<thNum-1;j++){
+		legendre_comb_mid[n]=new double[thNum];
+		for(int j=0;j<thNum-1;j++){
 			th=j*dth;
-			legendre_comb[n][j]=(cos(th)*gsl_sf_legendre_Pl(n+1,cos(th))-gsl_sf_legendre_Pl(n,cos(th)))/sin(th);
+			legendre_comb[n][j]=(cos(th)*gsl_sf_legendre_Pl(n+1,cos(th))-gsl_sf_legendre_Pl(n,cos(th)));
+			legendre_comb_mid[n][j]=(cos(th+dth*0.5)*gsl_sf_legendre_Pl(n+1,cos(th+dth*0.5))-gsl_sf_legendre_Pl(n,cos(th+dth*0.5)))/sin(th+dth*0.5);
 		}
 	}
 #endif
@@ -222,17 +239,12 @@ simulate ( )
 
 	//Begin simulation
 	double t;
-#ifndef TOROIDAL
-	double Aaux[rNum][thNum];
-	double gsA[rNum][thNum];
-#endif
-	double Baux[rNum][thNum];
-	double dBr=0;
-	double dBth=0;
+	time_t t1, t2;
+	time(&t1);
 	for(int k=0;k<=tNum;k++){
-		io::report_progress(k);
 		//Log data if k is multiple of plotSteps. Do not log if we are evolving pure Ohm
 		if(k%plotSteps==0 && k>=steps_less){
+			io::report_progress(k);
 			t=(k-sim::steps_less)*dt;
 			//Log integrated quantities
 			io::log_integrals_file(t,solve_integrals());
@@ -245,101 +257,141 @@ simulate ( )
 		}
 #ifndef TOROIDAL
 		//Update poloidal field function
-		for(int i=1;i<rNum;i++){
-			r=rmin+i*dr;
-			for(int j=1;j<thNum-1;j++){
-				th=j*dth;
-				//Solve Grad-Shafranov operator at point
-				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cos(th)/sin(th)*(A[i][j+1]-A[i][j-1])/2/dth;
-				//Evolve poloidal field function at point
-				Aaux[i][j]=A[i][j]+res_term_A[i][j]*gsA[i][j];
-#ifndef PUREOHM
-				//Do not evolve with hall for the first "steps_less" timesteps
-				if(k>=steps_less){
-					Aaux[i][j]+= ((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
-								 -(B[i+1][j]-B[i-1][j])*(A[i][j+1]-A[i][j-1]))*hall_term_A[i][j];
-				}
+		solve_new_A();
 #endif
-			}
-		}
-#endif
-
 		//Update toroidal field function
-		for(int i=0;i<rNum-1;i++){
-			for(int j=0;j<thNum-1;j++){
-				//Solve radial fluxes on B/sin(th)
-				if(j!=0){
-					dBr=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
-#ifndef PUREOHM
-					//Do not evolve with hall for the first "steps_less" timesteps
-					if(k>=steps_less){
-						dBr+=hall_rflux[i][j]
-							*(B[i][j]+B[i+1][j])
-							*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
-#ifndef TOROIDAL
-						dBr+=hall_rflux[i][j]
-							*(gsA[i][j]+gsA[i+1][j])
-							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
-#endif
-					}
-#endif
-				}
-				//Solve theta fluxes on B/sin(th)
-				if(i!=0){
-					dBth=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
-#ifndef PUREOHM
-					//Do not evolve with hall for the first "steps_less" timesteps
-					if(k>=steps_less){
-						dBth+=hall_thflux[i][j]
-							*(B[i][j]+B[i][j+1])
-							*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
-#ifndef TOROIDAL
-						dBth+=hall_thflux[i][j]
-							*(gsA[i][j]+gsA[i][j+1])
-							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
-#endif
-					}
-#endif
-				}
-				//Add flux at point, substract it from following points
-				Baux[i][j]+=(dBr+dBth)*sines[j];
-				Baux[i+1][j]=B[i+1][j]-dBr*sines[j];
-				Baux[i][j+1]-=dBth*sines[j+1];
-			}
-		}
-		//Pass values from auxiliary array Baux and Aaux
+		solve_new_B();
+		//Pass values from auxiliary array Aaux and compute change in B from fluxes in dBr and dBth
+		int exit=0;
+		#pragma omp parallel for collapse(2)
 		for(int i=1;i<rNum;i++){
 			for(int j=1;j<thNum-1;j++){
 				//Check for blowups, exit program if that happens
-				if(isinf(Baux[i][j])
+				if(isinf(dBr[i][j])||isinf(dBth[i][j])
 #ifndef TOROIDAL
 						||isinf(Aaux[i][j])
 #endif
 						){
 					io::report_blowup(k,i,j);
-					return 1;
+					exit=1;
 				}
-				B[i][j]=Baux[i][j];
+				B[i][j]+=(dBr[i][j]-dBr[i-1][j]+dBth[i][j]-dBth[i][j-1])*sines[j];
 #ifndef TOROIDAL
 				A[i][j]=Aaux[i][j];
 #endif
 			}
 		}
+		if(exit)
+			return 1;
 		//Fix beta value just outside the star so the numerical radial  derivative at the surface corresponds
 		//to solving it backwards (i.e. using only the point at the surface and the one just below)
+		#pragma omp parallel for
 		for(int j=0;j<thNum;j++){
 			B[0][j]=B[rNum-1][j]=0;
+			B[rNum-2][j]=B[rNum-3][j]/2;
+			B[1][j]=B[2][j]/2;
 			B[rNum][j]=-B[rNum-2][j];
 		}
 #ifndef TOROIDAL
 		solve_A_boundary();
 #endif
 	}
+	time(&t2);
+	std::cout << "\n\ntime: " << difftime(t2,t1) << "\n";
 
 	//Close file where integrated quantities are logged
 	io::close_integrals_file();
 	return 0;
 }		/* -----  end of function simulate  ----- */
+
+#ifndef TOROIDAL
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  solve_new_A
+ *  Description:  
+ * =====================================================================================
+ */
+	void
+solve_new_A ()
+{
+	#pragma omp parallel for collapse(2) private(r,th)
+	for(int i=1;i<rNum;i++){
+		for(int j=1;j<thNum-1;j++){
+			r=rmin+i*dr;
+			th=j*dth;
+			//Solve Grad-Shafranov operator at point
+			gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cotans[j]*(A[i][j+1]-A[i][j-1])/2/dth;
+			//Evolve poloidal field function at point
+			Aaux[i][j]=A[i][j]+res_term_A[i][j]*gsA[i][j];
+#ifndef PUREOHM
+			//Do not evolve with hall for the first "steps_less" timesteps
+//			if(k>=steps_less){
+				Aaux[i][j]+= ((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
+							 -(B[i+1][j]-B[i-1][j])*(A[i][j+1]-A[i][j-1]))*hall_term_A[i][j];
+//			}
+#endif
+		}
+	}
+	return;
+}		/* -----  end of function solve_new_A  ----- */
+#endif
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  solve_new_B
+ *  Description:  
+ * =====================================================================================
+ */
+	void
+solve_new_B ()
+{
+	#pragma omp parallel for collapse(2)
+	for(int i=0;i<rNum-1;i++){
+		for(int j=0;j<thNum-1;j++){
+			//Solve radial fluxes on B/sin(th)
+			if(j!=0){
+				dBr[i][j]=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
+#ifndef PUREOHM
+				//Do not evolve with hall for the first "steps_less" timesteps
+//				if(k>=steps_less){
+					dBr[i][j]+=hall_rflux[i][j]
+						*(B[i][j]+B[i+1][j])
+						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
+#ifndef TOROIDAL
+					dBr[i][j]+=hall_rflux[i][j]
+						*(gsA[i][j]+gsA[i+1][j])
+						*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
+#endif
+//				}
+#endif
+			}
+			//Solve theta fluxes on B/sin(th)
+			if(i!=0){
+				dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
+#ifndef PUREOHM
+				//Do not evolve with hall for the first "steps_less" timesteps
+//				if(k>=steps_less){
+					dBth[i][j]+=hall_thflux[i][j]
+						*(B[i][j]+B[i][j+1])
+						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+#ifndef TOROIDAL
+					dBth[i][j]+=hall_thflux[i][j]
+						*(gsA[i][j]+gsA[i][j+1])
+						*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
+#endif
+//				}
+#endif
+			}
+//			Baux[i][j]+=(dBr+dBth)*sines[j];
+//			Baux[i+1][j]+=B[i+1][j]-dBr*sines[j];
+//			Baux[i][j+1]-=dBth*sines[j+1];
+//			Baux[i][j]+=changeij;
+//			Baux[i+1][j]+=changei1j;
+//			Baux[i][j+1]+=changeij1;
+		}
+	}
+	return;
+}		/* -----  end of function solve_new_B  ----- */
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -395,7 +447,7 @@ solve_integrals ( )
 	//the coefficients "a" are missing some terms to represent the ones used in the notes
 	for(int n=0;n<l;n++){
 		//integrals[4+n]=pow(a[n],2)*(n+2)/(8*Pi);
-		integrals[4+n]=pow(a[n]*dth/3*2*Pi*pow(1-dr,n+1)/(n+2)*sqrt((2*n+3)/4.0/Pi)*(n+1)/2,2)*(n+2)/(8*Pi);
+		integrals[4+n]=pow(a[n],2)*(n+2)/(8*Pi);
 		integrals[3]+=integrals[4+n];
 	}
 #endif
@@ -412,29 +464,29 @@ solve_integrals ( )
 	void
 solve_A_boundary ( )
 {
-	//Solve integrated coefficients. Integrations are performed using simpsons rule, which uses a quadratic function
-	//to aproximate the integrand (simpson's rule).
+	//Solve integrated coefficients a_m.
+	#pragma omp parallel for
 	for(int n=0;n<l;n++){
 		a[n]=0;
-		for(int j=1;j<thNum-2;j++){
-			f1=A[rNum-1][j]*legendre_comb[n][j];
-			f0=f2=0;
-			if(j!=thNum-1){
-				f2=A[rNum-1][j+1]*legendre_comb[n][j+1];
-			}
-			if(j!=1){
-				f0=A[rNum-1][j-1]*legendre_comb[n][j-1];
-			}
-			a[n]+=(f0+4*f1+f2);
+		for(int j=0;j<thNum-1;j++){
+			//th=(j+0.5)*dth;
+			//a[n]+=(A[rNum-1][j]+A[rNum-1][j+1])/2*dth*(cos(th)*gsl_sf_legendre_Pl(n+1,cos(th))-gsl_sf_legendre_Pl(n,cos(th)))/sin(th);
+			a[n]+=(A[rNum-1][j]+A[rNum-1][j+1])*legendre_comb_mid[n][j]*boundary_factors1[n];
+			//a[n]+=(A[rNum-1][j]+A[rNum-1][j+1])/2*dth*legendre_comb_mid[n][j];
+			//a[n]+=(A[rNum-1][j]+A[rNum-1][j+1])/2*dth*legendre_comb_mid[n][j];
 		}
-	}
-	for(int j=1;j<thNum-1;j++){
-		A[rNum][j]=A[rNum-1][j];
+		//a[n]=a[n]*boundary_factors1[n];
+		//a[n]=a[n]*(n+1)/(n+2)*sqrt(Pi*(2*n+3));
 	}
 	//Permorm sumation
-	for(int n=0;n<l;n++){
-		for(int j=1;j<thNum-1;j++){
-			A[rNum][j]+=a[n]*boundary_factors[n]*legendre_comb[n][j]*sines[j];
+	#pragma omp parallel for
+	for(int j=1;j<thNum-1;j++){
+		A[rNum][j]=A[rNum-2][j];
+		for(int n=0;n<l;n++){
+			//th=j*dth;
+			//A[rNum][j]+=-2*dr*a[n]*(n+1)*sqrt((2*n+3)/(4*Pi))*(cos(th)*gsl_sf_legendre_Pl(n+1,cos(th))-gsl_sf_legendre_Pl(n,cos(th)));
+			//A[rNum][j]+=-2*dr*a[n]*(n+1)*sqrt((2*n+3)/(4*Pi))*legendre_comb[n][j];
+			A[rNum][j]+=boundary_factors2[n]*a[n]*legendre_comb[n][j];
 		}
 	}
 	return;
@@ -455,6 +507,10 @@ release_memory ( int info )
 	for(int i=0;i<rNum+1;i++){
 		delete[] B[i];
 		B[i]=NULL;
+		delete[] dBr[i];
+		dBr[i]=NULL;
+		delete[] dBth[i];
+		dBth[i]=NULL;
 #ifndef PUREOHM
 		delete[] hall_rflux[i];
 		hall_rflux[i]=NULL;
@@ -468,6 +524,10 @@ release_memory ( int info )
 #ifndef TOROIDAL
 		delete[] A[i];
 		A[i]=NULL;
+		delete[] Aaux[i];
+		Aaux[i]=NULL;
+		delete[] gsA[i];
+		gsA[i]=NULL;
 		delete[] res_term_A[i];
 		res_term_A[i]=NULL;
 #ifndef PUREOHM
@@ -478,6 +538,10 @@ release_memory ( int info )
 	}
 	delete B;
 	B=NULL;
+	delete dBr;
+	dBr=NULL;
+	delete dBth;
+	dBth=NULL;
 #ifndef PUREOHM
 	delete hall_rflux;
 	hall_rflux=NULL;
@@ -491,16 +555,26 @@ release_memory ( int info )
 #ifndef TOROIDAL
 	delete A;
 	A=NULL;
+	delete Aaux;
+	Aaux=NULL;
+	delete gsA;
+	gsA=NULL;
 	delete res_term_A;
 	res_term_A=NULL;
 #ifndef PUREOHM
 	delete hall_term_A;
 	hall_term_A=NULL;
 #endif
+	delete sines;
+	sines=NULL;
+	delete cotans;
+	cotans=NULL;
 	delete[] a;
 	a=NULL;
-	delete[] boundary_factors;
-	boundary_factors=NULL;
+	delete[] boundary_factors1;
+	boundary_factors1=NULL;
+	delete[] boundary_factors2;
+	boundary_factors2=NULL;
 	for(int n=0;n<l;n++){
 		delete[] legendre_comb[n];
 		legendre_comb[n]=NULL;
