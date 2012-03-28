@@ -115,7 +115,11 @@ initial_conditions ( )
 		r=rmin+i*dr;
 		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
+#ifndef SC
 			B[i][j]=initial::B(r,th);
+#else
+			B[i][j]=initial::B(r-dr/2,th);
+#endif
 #ifndef TOROIDAL
 			A[i][j]=initial::A(r,th);
 #endif
@@ -127,8 +131,13 @@ initial_conditions ( )
 		B[i][0]=B[i][thNum-1]=0;
 	}
 	for(int j=0;j<thNum;j++){
+#ifndef SC
 		B[0][j]=B[rNum-1][j]=0;
 		B[rNum][j]=-B[rNum-2][j];
+#else
+		B[rNum-1][j]=B[rNum-2][j]/3;
+		B[rNum][j]=-B[rNum-1][j];
+#endif
 	}
 #ifndef TOROIDAL
 	//Set boundary condition for poloidal fields
@@ -193,12 +202,22 @@ solve_repeated_values ( )
 			th=j*dth;
 #ifndef PUREOHM
 			hall_term_A[i][j]=dt*sines[j]*initial::chi(r,th)/4/dr/dth;
+#ifndef SC
 			hall_rflux[i][j] = dt*initial::chi(r+dr/2,th)/8.0/dr/dth;
 			hall_thflux[i][j]=-dt*initial::chi(r,th+dth/2)/8.0/dr/dth;
+#else
+			hall_rflux[i][j] = dt*initial::chi(r,th)/8.0/dr/dth;
+			hall_thflux[i][j]=-dt*initial::chi(r-dr/2,th+dth/2)/8.0/dr/dth;
+#endif
 #endif
 			res_term_A[i][j]=dt*thtd*initial::eta(r,th);
+#ifndef SC
 			res_rflux[i][j]  = dt*thtd*initial::eta(r+dr/2,th)/sin(th)/dr/dr;
 			res_thflux[i][j] = dt*thtd*initial::eta(r,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
+#else
+			res_rflux[i][j]  = dt*thtd*initial::eta(r,th)/sin(th)/dr/dr;
+			res_thflux[i][j] = dt*thtd*initial::eta(r-dr/2,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
+#endif
 		}
 	}
 	//Solve common terms involved in resolution of the multipole fit outside the star
@@ -280,8 +299,11 @@ simulate ( )
 		}
 		if(exit)
 			return 1;
+#ifndef TOROIDAL
 		//Fix beta value just outside the star so the numerical radial  derivative at the surface corresponds
-		//to solving it backwards (i.e. using only the point at the surface and the one just below)
+		//to solving it backwards (i.e. using only the point at the surface and the one just below). Not required
+		//for purely toroidal runs.
+#ifndef SC
 		#pragma omp parallel for
 		for(int j=0;j<thNum;j++){
 			B[0][j]=B[rNum-1][j]=0;
@@ -289,12 +311,19 @@ simulate ( )
 			B[1][j]=B[2][j]/2;
 			B[rNum][j]=-B[rNum-2][j];
 		}
-#ifndef TOROIDAL
+#else
+		#pragma omp parallel for
+		for(int j=0;j<thNum;j++){
+			B[rNum-1][j]=B[rNum-2][j]/3;
+			B[rNum][j]=-B[rNum-1][j];
+		}
+#endif
+		//Solve boundary condition of the surface of the star for alpha
 		solve_A_boundary();
 #endif
 	}
 	time(&t2);
-	std::cout << "\n\ntime: " << difftime(t2,t1) << "\n";
+	std::cout << std::endl << std::endl << "time: " << difftime(t2,t1) << std::endl;
 
 	//Close file where integrated quantities are logged
 	io::close_integrals_file();
@@ -321,8 +350,13 @@ solve_new_A ()
 			//Evolve poloidal field function at point
 			Aaux[i][j]=A[i][j]+res_term_A[i][j]*gsA[i][j];
 #ifndef PUREOHM
+#ifndef SC
 			Aaux[i][j]+= ((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
 						 -(B[i+1][j]-B[i-1][j])*(A[i][j+1]-A[i][j-1]))*hall_term_A[i][j];
+#else
+			Aaux[i][j]+= ((B[i+1][j+1]+B[i][j+1]-B[i+1][j-1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])/2
+						 -(B[i+1][j]-B[i][j])*(A[i][j+1]-A[i][j-1])*2)*hall_term_A[i][j];
+#endif
 #endif
 		}
 	}
@@ -350,13 +384,24 @@ solve_new_B ()
 					*(B[i][j]+B[i+1][j])
 					*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
 #ifndef TOROIDAL
+#ifndef SC
 				dBr[i][j]+=hall_rflux[i][j]
 					*(gsA[i][j]+gsA[i+1][j])
 					*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
+#else
+				if(i!=0){
+					dBr[i][j]+=hall_rflux[i][j]
+						*gsA[i][j]*2
+						*(A[i][j+1]-A[i][j-1])*2;
+				}else{
+					dBr[i][j]=0;
+				}
+#endif
 #endif
 #endif
 			}
 			//Solve theta fluxes on B/sin(th)
+#ifndef SC
 			if(i!=0){
 				dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
 #ifndef PUREOHM
@@ -370,6 +415,36 @@ solve_new_B ()
 #endif
 #endif
 			}
+#else
+			if(i==0){
+				dBth[i][j]=0;
+			}else if(i==1){
+				dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
+#ifndef PUREOHM
+				dBth[i][j]+=hall_thflux[i][j]
+					*(B[i][j]+B[i][j+1])
+					*(B[i+1][j]+B[i+1][j+1]-B[i][j]-B[i][j+1])*2;
+#ifndef TOROIDAL
+				dBth[i][j]+=hall_thflux[i][j]
+					*(gsA[i][j]+gsA[i][j+1])
+					*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
+#endif
+#endif
+			}else{
+				dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
+#ifndef PUREOHM
+				dBth[i][j]+=hall_thflux[i][j]
+					*(B[i][j]+B[i][j+1])
+					*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+#ifndef TOROIDAL
+				dBth[i][j]+=hall_thflux[i][j]
+					*(gsA[i][j]+gsA[i][j+1]+gsA[i-1][j]+gsA[i-1][j+1])/2
+					*(A[i+1][j]+A[i+1][j+1]-A[i][j]-A[i][j+1])*2;
+#endif
+#endif
+			}
+
+#endif
 		}
 	}
 	return;

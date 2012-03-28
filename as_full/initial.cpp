@@ -42,10 +42,10 @@ A ( double r, double th )
 	//is very close to 1 at its maximun. This values require
 	//r_min=0.75.
 	//MODE 1,1
-//	int l=1;
-//	double A=-0.55882;
-//	double B=-0.52004;
-//	double k=7.03266;
+	int l=1;
+	double A=-0.55882;
+	double B=-0.52004;
+	double k=7.03266;
 	//MODE 2,1
 //	int l=1;
 //	double A=-0.72288;
@@ -62,11 +62,11 @@ A ( double r, double th )
 //	double B=0.39534;
 //	double k=19.46616;
 
-//	return 1*r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
+	return 1*r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
 	//######################END OHM EIGENMODES####################
 
 	//Equilibrium field due to rigid body rotation of electrons for constant electron density
-	return 1/2.0*pow(sin(th),2)*((3*pow(rmin,5)-5*pow(rmin,3))/r+5*pow(r,2)-3*pow(r,4))/(2-5*pow(rmin,3)+3*pow(rmin,5));
+//	return 1/2.0*pow(sin(th),2)*((3*pow(rmin,5)-5*pow(rmin,3))/r+5*pow(r,2)-3*pow(r,4))/(2-5*pow(rmin,3)+3*pow(rmin,5));
 }		/* -----  end of function Ai  ----- */
 #endif
 
@@ -107,7 +107,7 @@ B ( double r, double th )
 //	double B=3.72583;
 //	double k=25.29089;
 
-	return 0*r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
+	return r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
 	//######################END OHM EIGENMODES####################
 }		/* -----  end of function B  ----- */
 
