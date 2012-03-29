@@ -52,41 +52,40 @@ string description;
 read_args ( int argc, char *argv[] )
 {
 	//Check if correct number of arguments is provided
-#ifdef TOROIDAL
+	#ifdef TOROIDAL
 	if(argc!=9)
-#else
+	#else
 	if(argc!=10)
-#endif
+	#endif
 	{
 		cerr<<"ERROR: Not enough arguments provided"<<endl;
 		cerr<<"usage is:"<<endl;
 		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)>";
-#ifndef TOROIDAL
-		cerr<<" <l(int)>";
-#endif
+		#ifndef TOROIDAL
+			cerr<<" <l(int)>";
+		#endif
 		cerr<<" <folder(string_without_spaces)> <description(string_without_spaces)>";
 		cerr<<endl;
 		return 1;
 	}
 	//Check integrity of all parameters
 	if(
-			!io::is_integer(argv[1])||
-			!io::is_integer(argv[2])||
-			!io::is_float(argv[3])||
-			!io::is_integer(argv[4])||
-			!io::is_integer(argv[5])||
-			!io::is_float(argv[6])
-#ifndef TOROIDAL
+		!io::is_integer(argv[1])||
+		!io::is_integer(argv[2])||
+		!io::is_float(argv[3])||
+		!io::is_integer(argv[4])||
+		!io::is_integer(argv[5])||
+		!io::is_float(argv[6])
+		#ifndef TOROIDAL
 			||!io::is_integer(argv[7])
-#endif
-			)
-	{
+		#endif
+	){
 		cerr<<"ERROR: Arguments not in the right format"<<endl;
 		cerr<<"usage is:"<<endl;
 		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)>";
-#ifndef TOROIDAL
-		cerr<<" <l(int)>";
-#endif
+		#ifndef TOROIDAL
+			cerr<<" <l(int)>";
+		#endif
 		return 1;
 	}
 	//Store values for simulation
@@ -96,14 +95,14 @@ read_args ( int argc, char *argv[] )
 	sim::tNum=atoi(argv[4]);
 	sim::plotSteps=atoi(argv[5]);
 	sim::thtd=atof(argv[6]);
-#ifndef TOROIDAL
-	sim::l=atoi(argv[7]);
-	results_folder=argv[8];
-	description=argv[9];
-#else
-	results_folder=argv[7];
-	description=argv[8];
-#endif
+	#ifndef TOROIDAL
+		sim::l=atoi(argv[7]);
+		results_folder=argv[8];
+		description=argv[9];
+	#else
+		results_folder=argv[7];
+		description=argv[8];
+	#endif
 	return 0;
 }		/* -----  end of function read_args  ----- */
 
@@ -176,9 +175,9 @@ create_folder ( )
 	params << "plotSteps:"<< sim::plotSteps << std::endl;
 	params << "rmin:"<< sim::rmin << std::endl;
 	params << "thtd:"<< sim::thtd << std::endl;
-#ifndef TOROIDAL
-	params << "l:"<< sim::l << std::endl;
-#endif
+	#ifndef TOROIDAL
+		params << "l:"<< sim::l << std::endl;
+	#endif
 	params.close();
 
 	//Append line with summary to a file named "summary"
@@ -188,17 +187,20 @@ create_folder ( )
 	summary << sim::rNum << "x" << sim::thNum << "x" << sim::dt << ", ";
 	summary << "thtd:" << sim::thtd << ", ";
 	summary << "rmin:" << sim::rmin << ", ";
-#ifndef TOROIDAL
-	summary << "l:" << sim::l << ", ";
-#endif
+	#ifndef TOROIDAL
+		summary << "l:" << sim::l << ", ";
+	#endif
 	//Specify compiler build options, T=TOROIDAL, O=PUREOHM
 	summary << "COMP_OPT:";
-#ifdef TOROIDAL
-	summary << "T";
-#endif
-#ifdef PUREOHM
-	summary << "O";
-#endif
+	#ifdef TOROIDAL
+		summary << "T";
+	#endif
+	#ifdef PUREOHM
+		summary << "O";
+	#endif
+	#ifdef SC
+		summary << "S";
+	#endif
 	summary << "." << endl;
 	summary.close();
 
@@ -226,9 +228,9 @@ print_header ( )
 	cout << "-Save output every "<< sim::plotSteps << " steps" << endl;
 	cout << "-Minimun radius: "<< sim::rmin << endl;
 	cout << "-Ratio of hall to dissipative timescales: "<< sim::thtd << endl;
-#ifndef TOROIDAL
-	cout << "-Multipoles used for external field: "<< sim::l << endl;
-#endif
+	#ifndef TOROIDAL
+		cout << "-Multipoles used for external field: "<< sim::l << endl;
+	#endif
 	cout << endl;
 	cout << "Results stored in folder results_"<< results_folder << "/" << timeStream.str() << "_" << description << endl << endl;
 	return;
@@ -245,15 +247,15 @@ create_integrals_file ( )
 {
 	string filename="results_"+results_folder+"/"+timeStream.str()+"_"+description+"/integrals.dat";
 	integrals_file.open(filename.c_str());
-#ifdef TOROIDAL
-	integrals_file << "#t F_t E_T" << endl;
-#else
-	integrals_file << "#t F_t E_T E_Pi E_Pe" ;
-	for(int n=1;n<=sim::l;n++){
-		integrals_file << " E_" << n;
-	}
-	integrals_file << endl;
-#endif
+	#ifdef TOROIDAL
+		integrals_file << "#t F_t E_T" << endl;
+	#else
+		integrals_file << "#t F_t E_T E_Pi E_Pe" ;
+		for(int n=1;n<=sim::l;n++){
+			integrals_file << " E_" << n;
+		}
+		integrals_file << endl;
+	#endif
 	return;
 }		/* -----  end of function create_integrals_file  ----- */
 
@@ -266,16 +268,16 @@ create_integrals_file ( )
 	void
 log_integrals_file ( double t, double *integrals )
 {
-#ifdef TOROIDAL
-	integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
-#else
-	integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << " " << integrals[3];
-	//Log energy of multipoles outside the star
-	for(int n=1;n<=sim::l;n++){
-		integrals_file << " " << integrals[3+n];
-	}
-	integrals_file << endl;
-#endif
+	#ifdef TOROIDAL
+		integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
+	#else
+		integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << " " << integrals[3];
+		//Log energy of multipoles outside the star
+		for(int n=1;n<=sim::l;n++){
+			integrals_file << " " << integrals[3+n];
+		}
+		integrals_file << endl;
+	#endif
 	//Release memory
 	delete[] integrals;
 	integrals=NULL;
@@ -304,21 +306,21 @@ close_integrals_file ( )
 	void
 log_field ( int k )
 {
-#ifndef TOROIDAL
-	//Construct filename for alpha log file, and open it
-	stringstream AStream;
-	AStream << "results_" << results_folder << "/" << timeStream.str() << "_" << description << "/A_" << k;
-	string filenameA=AStream.str();
-	ofstream resultsA;
-	resultsA.open(filenameA.c_str());
-	for(int i=0;i<sim::rNum;i++){
-		for(int j=0;j<sim::thNum;j++){
-			resultsA << sim::A[i][j] << " ";
+	#ifndef TOROIDAL
+		//Construct filename for alpha log file, and open it
+		stringstream AStream;
+		AStream << "results_" << results_folder << "/" << timeStream.str() << "_" << description << "/A_" << k;
+		string filenameA=AStream.str();
+		ofstream resultsA;
+		resultsA.open(filenameA.c_str());
+		for(int i=0;i<sim::rNum;i++){
+			for(int j=0;j<sim::thNum;j++){
+				resultsA << sim::A[i][j] << " ";
+			}
+			resultsA << endl;
 		}
-		resultsA << endl;
-	}
-	resultsA.close();
-#endif
+		resultsA.close();
+	#endif
 	//Construct filename for alpha log file, and open it
 	stringstream BStream;
 	BStream << "results_" << results_folder << "/" << timeStream.str() << "_" << description << "/B_" << k;

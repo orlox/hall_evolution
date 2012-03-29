@@ -28,13 +28,13 @@ extern double thtd;
 //physical values of functions defining the magnetic field.
 extern double **B, **dBr, **dBth;
 #ifndef TOROIDAL
-extern double **A, **Aaux, **gsA;
+	extern double **A, **Aaux, **gsA;
 #endif
 //minimun radius of the shell containing the magnetic field.
 extern double rmin;
 #ifndef TOROIDAL
-//Number of points used for the multipole fit outside the star
-extern int l;
+	//Number of points used for the multipole fit outside the star
+	extern int l;
 #endif
 //size of spatial steps.
 extern double dr;
