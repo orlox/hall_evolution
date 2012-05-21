@@ -51,8 +51,10 @@ void solve_new_A();
 void solve_new_B();
 //function that solves integrated quantities
 double* solve_integrals();
-//function that solves integrated quantities
+//function that solves boundary conditions on alpha
 void solve_A_boundary();
+//function that solves boundary conditions on beta
+void solve_B_boundary();
 //function releases memory when simulation is done
 void release_memory(int signal);
 }

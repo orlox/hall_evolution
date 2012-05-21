@@ -16,7 +16,7 @@ ifdef sc
 endif
 #"all" compiles the code without debugging symbols.
 all:
-	g++ $(OPENMP) -Wall -lgsl $(TOROIDAL) $(PUREOHM) $(SC) as_full.cpp io.cpp sim.cpp initial.cpp -o as_full_run
+	g++ $(OPENMP) -Wall $(TOROIDAL) $(PUREOHM) $(SC) as_full.cpp io.cpp sim.cpp initial.cpp -o as_full_run -lgsl -lgslcblas
 #"the same as all, but with debug symbols"
 dall:
 	g++ $(OPENMP) -g -Wall -lgsl as_full.cpp io.cpp sim.cpp initial.cpp -o as_full_run

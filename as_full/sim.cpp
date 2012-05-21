@@ -63,8 +63,10 @@ double rmin;
 	//Repeated l and th dependent values that are solved in term of combinations Legendre polynomials. This is solved in the grid, and midpoint, so two arrays are required.
 	double **legendre_comb;
 	double **legendre_comb_mid;
-	//Auxiliary variables used in function sim::solve_A_boundary to integrate the multipole coefficients
-	double f0,f1,f2;
+#endif
+#ifdef SC
+	//products of n, eta and thtd rigth at the inner boundary, required to solve superconductor boundary conditions
+	double *sc_factors;
 #endif
 //Size of spatial steps.
 double dr,dth;
@@ -84,15 +86,15 @@ initial_conditions ( )
 {
 	//Initialize arrays with appropiate sizes
 	#ifndef TOROIDAL
-		A=new double*[rNum+1];
-		Aaux=new double*[rNum+1];
-		gsA=new double*[rNum+1];
+		A=new double*[rNum+2];
+		Aaux=new double*[rNum+2];
+		gsA=new double*[rNum+2];
 		a=new double[l];
 	#endif
-	B=new double*[rNum+1];
-	dBr=new double*[rNum+1];
-	dBth=new double*[rNum+1];
-	for(int i=0;i<rNum+1;i++){
+	B=new double*[rNum+2];
+	dBr=new double*[rNum+2];
+	dBth=new double*[rNum+2];
+	for(int i=0;i<rNum+2;i++){
 		B[i]=new double[thNum];
 		dBr[i]=new double[thNum];
 		dBth[i]=new double[thNum];
@@ -111,47 +113,42 @@ initial_conditions ( )
 	dth=Pi/(thNum-1);
 
 	//Store the initial values of physical quantities
-	for(int i=1;i<rNum;i++){
-		r=rmin+i*dr;
+	for(int i=1;i<rNum+1;i++){
+		r=rmin+(i-1)*dr;
 		for(int j=1;j<thNum-1;j++){
 			th=j*dth;
-			#ifndef SC
-				B[i][j]=initial::B(r,th);
-			#else
-				B[i][j]=initial::B(r-dr/2,th);
-			#endif
+			B[i][j]=initial::B(r,th);
 			#ifndef TOROIDAL
 				A[i][j]=initial::A(r,th);
 			#endif
 		}
 	}
 
-	//Set boundary conditions for toroidal field
-	for(int i=0;i<rNum;i++){
-		B[i][0]=B[i][thNum-1]=0;
-	}
+	//Set boundary conditions for toroidal field at the inner and outer boundary
 	for(int j=0;j<thNum;j++){
-		#ifndef SC
-			B[0][j]=B[rNum-1][j]=0;
-			B[rNum][j]=-B[rNum-2][j];
-		#else
-			B[rNum-1][j]=B[rNum-2][j]/3;
-			B[rNum][j]=-B[rNum-1][j];
+		B[rNum][j]=0;
+		B[rNum+1][j]=-B[rNum-1][j];
+	}
+	//Set boundary conditions for toroidal and poloidal field at the axis
+	for(int i=0;i<rNum+2;i++){
+		B[i][0]=B[i][thNum-1]=0;
+		#ifndef TOROIDAL
+			A[i][0]=A[i][thNum-1]=0;
 		#endif
 	}
-	#ifndef TOROIDAL
-		//Set boundary condition for poloidal fields
-		for(int i=0;i<rNum;i++){
-			A[i][0]=A[i][thNum-1]=0;
-		}
-		for(int j=0;j<thNum;j++){
-			A[0][j]=0;
-		}
-	#endif
 
 	//Solve common values repeated multiple times during the simulation
 	solve_repeated_values();
 
+	#ifdef SC
+	//Solve boundary conditions for beta. This is only required if superconductor boundary conditions are used,
+	//or the simulation is not purely toroidal.
+	solve_B_boundary();
+	#else
+		#ifndef TOROIDAL
+			solve_B_boundary();
+		#endif
+	#endif
 	#ifndef TOROIDAL
 		//Adjust alpha boundary conditions to fit smoothly to a poloidal field outside the star
 		solve_A_boundary();
@@ -171,16 +168,19 @@ solve_repeated_values ( )
 {
 	//Initialize arrays with appropiate sizes
 	#ifndef PUREOHM
-		hall_term_A=new double*[rNum+1];
-		hall_rflux=new double*[rNum+1];
-		hall_thflux=new double*[rNum+1];
+		hall_term_A=new double*[rNum+2];
+		hall_rflux=new double*[rNum+2];
+		hall_thflux=new double*[rNum+2];
 	#endif
-	res_term_A=new double*[rNum+1];
-	res_rflux=new double*[rNum+1];
-	res_thflux=new double*[rNum+1];
+	res_term_A=new double*[rNum+2];
+	res_rflux=new double*[rNum+2];
+	res_thflux=new double*[rNum+2];
 	sines=new double[thNum];
 	cotans=new double[thNum];
-	for(int i=0;i<rNum+1;i++){
+	#ifdef SC
+		sc_factors=new double[thNum];
+	#endif
+	for(int i=0;i<rNum+2;i++){
 		#ifndef PUREOHM
 			hall_term_A[i]=new double[thNum];
 			hall_rflux[i]=new double[thNum];
@@ -195,29 +195,20 @@ solve_repeated_values ( )
 		th=j*dth;
 		sines[j]=sin(th);
 		cotans[j]=cos(th)/sin(th);
+		sc_factors[j]=initial::eta(rmin,th)*initial::eta(rmin,th)*thtd;
 	}
-	for(int i=0;i<rNum;i++){
-		r=rmin+i*dr;
+	for(int i=0;i<rNum+2;i++){
+		r=rmin+(i-1)*dr;
 		for(int j=0;j<thNum-1;j++){
 			th=j*dth;
 			#ifndef PUREOHM
 				hall_term_A[i][j]=dt*sines[j]*initial::chi(r,th)/4/dr/dth;
-				#ifndef SC
-					hall_rflux[i][j] = dt*initial::chi(r+dr/2,th)/8.0/dr/dth;
-					hall_thflux[i][j]=-dt*initial::chi(r,th+dth/2)/8.0/dr/dth;
-				#else
-					hall_rflux[i][j] = dt*initial::chi(r,th)/8.0/dr/dth;
-					hall_thflux[i][j]=-dt*initial::chi(r-dr/2,th+dth/2)/8.0/dr/dth;
-				#endif
+				hall_rflux[i][j] = dt*initial::chi(r+dr/2,th)/8.0/dr/dth;
+				hall_thflux[i][j]=-dt*initial::chi(r,th+dth/2)/8.0/dr/dth;
 			#endif
 			res_term_A[i][j]=dt*thtd*initial::eta(r,th);
-			#ifndef SC
-				res_rflux[i][j]  = dt*thtd*initial::eta(r+dr/2,th)/sin(th)/dr/dr;
-				res_thflux[i][j] = dt*thtd*initial::eta(r,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
-			#else
-				res_rflux[i][j]  = dt*thtd*initial::eta(r,th)/sin(th)/dr/dr;
-				res_thflux[i][j] = dt*thtd*initial::eta(r-dr/2,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
-			#endif
+			res_rflux[i][j]  = dt*thtd*initial::eta(r+dr/2,th)/sin(th)/dr/dr;
+			res_thflux[i][j] = dt*thtd*initial::eta(r,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
 		}
 	}
 	#ifndef TOROIDAL
@@ -280,7 +271,7 @@ simulate ( )
 		//Pass values from auxiliary array Aaux and compute change in B from fluxes in dBr and dBth
 		int exit=0;
 		#pragma omp parallel for collapse(2)
-		for(int i=1;i<rNum;i++){
+		for(int i=1;i<rNum+1;i++){
 			for(int j=1;j<thNum-1;j++){
 				//Check for blowups, exit program if that happens
 				if(isinf(dBr[i][j])||isinf(dBth[i][j])
@@ -288,37 +279,39 @@ simulate ( )
 						||isinf(Aaux[i][j])
 						#endif
 						){
-					io::report_blowup(k,i,j);
-					exit=1;
+					if(exit!=1){
+						io::report_blowup(k,i,j);
+						exit=1;
+					}
 				}
-				B[i][j]+=(dBr[i][j]-dBr[i-1][j]+dBth[i][j]-dBth[i][j-1])*sines[j];
+				#ifndef SC
+					B[i][j]+=(dBr[i][j]-dBr[i-1][j]+dBth[i][j]-dBth[i][j-1])*sines[j];
+				#else
+					if(i==1){
+						B[i][j]+=(2*dBr[i][j]+dBth[i][j]-dBth[i][j-1])*sines[j];
+					}else{
+						B[i][j]+=(dBr[i][j]-dBr[i-1][j]+dBth[i][j]-dBth[i][j-1])*sines[j];
+					}
+				#endif
 				#ifndef TOROIDAL
 					A[i][j]=Aaux[i][j];
 				#endif
 			}
 		}
-		if(exit)
+		if(exit){
 			return 1;
-		#ifndef TOROIDAL
-			//Fix beta value just outside the star so the numerical radial  derivative at the surface corresponds
-			//to solving it backwards (i.e. using only the point at the surface and the one just below). Not required
-			//for purely toroidal runs.
-			#ifndef SC
-				#pragma omp parallel for
-				for(int j=0;j<thNum;j++){
-					B[0][j]=B[rNum-1][j]=0;
-					B[rNum-2][j]=B[rNum-3][j]/2;
-					B[1][j]=B[2][j]/2;
-					B[rNum][j]=-B[rNum-2][j];
-				}
-			#else
-				#pragma omp parallel for
-				for(int j=0;j<thNum;j++){
-					B[rNum-1][j]=B[rNum-2][j]/3;
-					B[rNum][j]=-B[rNum-1][j];
-				}
+		}
+		#ifdef SC
+		//Solve boundary conditions for beta. This is only required if superconductor boundary conditions are used,
+		//or the simulation is not purely toroidal.
+		solve_B_boundary();
+		#else
+			#ifndef TOROIDAL
+				solve_B_boundary();
 			#endif
-		//Solve boundary condition of the surface of the star for alpha
+		#endif
+		#ifndef TOROIDAL
+		//Solve boundary conditions for alpha
 		solve_A_boundary();
 		#endif
 	}
@@ -341,23 +334,20 @@ simulate ( )
 solve_new_A ()
 {
 	#pragma omp parallel for collapse(2) private(r,th)
-	for(int i=1;i<rNum;i++){
+	for(int i=1;i<rNum+1;i++){
 		for(int j=1;j<thNum-1;j++){
-			r=rmin+i*dr;
+			r=rmin+(i-1)*dr;
 			th=j*dth;
 			//Solve Grad-Shafranov operator at point
 			gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cotans[j]*(A[i][j+1]-A[i][j-1])/2/dth;
 			//Evolve poloidal field function at point
-			Aaux[i][j]=A[i][j]+res_term_A[i][j]*gsA[i][j];
-			#ifndef PUREOHM
-				#ifndef SC
+			if(i!=1){
+				Aaux[i][j]=A[i][j]+res_term_A[i][j]*gsA[i][j];
+				#ifndef PUREOHM
 					Aaux[i][j]+= ((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
 								 -(B[i+1][j]-B[i-1][j])*(A[i][j+1]-A[i][j-1]))*hall_term_A[i][j];
-				#else
-					Aaux[i][j]+= ((B[i+1][j+1]+B[i][j+1]-B[i+1][j-1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])/2
-								 -(B[i+1][j]-B[i][j])*(A[i][j+1]-A[i][j-1])*2)*hall_term_A[i][j];
 				#endif
-			#endif
+			}
 		}
 	}
 	return;
@@ -374,7 +364,7 @@ solve_new_A ()
 solve_new_B ()
 {
 	#pragma omp parallel for collapse(2)
-	for(int i=0;i<rNum-1;i++){
+	for(int i=1;i<rNum;i++){
 		for(int j=0;j<thNum-1;j++){
 			//Solve radial fluxes on B/sin(th)
 			if(j!=0){
@@ -384,70 +374,26 @@ solve_new_B ()
 						*(B[i][j]+B[i+1][j])
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
 					#ifndef TOROIDAL
-						#ifndef SC
-							dBr[i][j]+=hall_rflux[i][j]
-								*(gsA[i][j]+gsA[i+1][j])
-								*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
-						#else
-							if(i!=0){
-								dBr[i][j]+=hall_rflux[i][j]
-									*gsA[i][j]*2
-									*(A[i][j+1]-A[i][j-1])*2;
-							}else{
-								dBr[i][j]=0;
-							}
-						#endif
-					#endif
-				#else
-					#ifdef SC
-						if(i==0){
-							dBr[i][j]=0;
-						}
+						dBr[i][j]+=hall_rflux[i][j]
+							*(gsA[i][j]+gsA[i+1][j])
+							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
 					#endif
 				#endif
 			}
 			//Solve theta fluxes on B/sin(th)
-			#ifndef SC
-				if(i!=0){
-					dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
-					#ifndef PUREOHM
-						dBth[i][j]+=hall_thflux[i][j]
-							*(B[i][j]+B[i][j+1])
-							*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
-						#ifndef TOROIDAL
-							dBth[i][j]+=hall_thflux[i][j]
-								*(gsA[i][j]+gsA[i][j+1])
-								*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
-						#endif
-					#endif
-				}
-			#else
-				if(i==1){
-					dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
-					#ifndef PUREOHM
-						dBth[i][j]+=hall_thflux[i][j]
-							*(B[i][j]+B[i][j+1])
-							*(B[i+1][j]+B[i+1][j+1]-B[i][j]-B[i][j+1])*2;
-						#ifndef TOROIDAL
+			if(i!=0){
+				dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
+				#ifndef PUREOHM
+					dBth[i][j]+=hall_thflux[i][j]
+						*(B[i][j]+B[i][j+1])
+						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
+					#ifndef TOROIDAL
 						dBth[i][j]+=hall_thflux[i][j]
 							*(gsA[i][j]+gsA[i][j+1])
 							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
-						#endif
 					#endif
-				}else if(i>1){
-					dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
-					#ifndef PUREOHM
-						dBth[i][j]+=hall_thflux[i][j]
-							*(B[i][j]+B[i][j+1])
-							*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
-						#ifndef TOROIDAL
-							dBth[i][j]+=hall_thflux[i][j]
-								*(gsA[i][j]+gsA[i][j+1]+gsA[i-1][j]+gsA[i-1][j+1])/2
-								*(A[i+1][j]+A[i+1][j+1]-A[i][j]-A[i][j+1])*2;
-						#endif
 				#endif
-				}
-			#endif
+			}
 		}
 	}
 	return;
@@ -480,9 +426,9 @@ solve_integrals ( )
 	#endif
 
 	//Solve quantities integrated over the volume of the star
-	for(int i=0;i<rNum-1;i++){
+	for(int i=1;i<rNum;i++){
 		#ifndef TOROIDAL
-			r=(0.5+i)*dr+rmin;
+			r=(0.5+i-1)*dr+rmin;
 		#endif
 		for(int j=0;j<thNum-1;j++){
 			th=(0.5+j)*dth;
@@ -524,34 +470,60 @@ solve_integrals ( )
 	void
 solve_A_boundary ( )
 {
-	//Solve integrated coefficients a_m.
+	//Solve integrated coefficients a_l.
 	#pragma omp parallel for
 	for(int n=0;n<l;n++){
 		a[n]=0;
 		for(int j=0;j<thNum-1;j++){
-			//th=(j+0.5)*dth;
-			//a[n]+=(A[rNum-1][j]+A[rNum-1][j+1])/2*dth*(cos(th)*gsl_sf_legendre_Pl(n+1,cos(th))-gsl_sf_legendre_Pl(n,cos(th)))/sin(th);
-			a[n]+=(A[rNum-1][j]+A[rNum-1][j+1])*legendre_comb_mid[n][j]*boundary_factors1[n];
-			//a[n]+=(A[rNum-1][j]+A[rNum-1][j+1])/2*dth*legendre_comb_mid[n][j];
-			//a[n]+=(A[rNum-1][j]+A[rNum-1][j+1])/2*dth*legendre_comb_mid[n][j];
+			a[n]+=(A[rNum][j]+A[rNum][j+1])*legendre_comb_mid[n][j]*boundary_factors1[n];
 		}
-		//a[n]=a[n]*boundary_factors1[n];
-		//a[n]=a[n]*(n+1)/(n+2)*sqrt(Pi*(2*n+3));
 	}
-	//Permorm sumation
+	//Fix A value at the inner boundary to zero and solve value of inner point to set superconductor boundary condition.
+	//Then, perform summation to impose boundary condition on the surface.
 	#pragma omp parallel for
 	for(int j=1;j<thNum-1;j++){
-		A[rNum][j]=A[rNum-2][j];
+		A[1][j]=0;
+		#ifdef SC
+			A[0][j]=-A[2][j]*(sc_factors[j]/dr+(B[1][j+1]-B[1][j-1])/(pow(rmin,2)*sines[j]*4*dth))/(thtd/dr-(B[1][j+1]-B[1][j-1])/(pow(rmin,2)*sines[j]*4*dth));
+		#endif
+		A[rNum+1][j]=A[rNum-1][j];
 		for(int n=0;n<l;n++){
-			//th=j*dth;
-			//A[rNum][j]+=-2*dr*a[n]*(n+1)*sqrt((2*n+3)/(4*Pi))*(cos(th)*gsl_sf_legendre_Pl(n+1,cos(th))-gsl_sf_legendre_Pl(n,cos(th)));
-			//A[rNum][j]+=-2*dr*a[n]*(n+1)*sqrt((2*n+3)/(4*Pi))*legendre_comb[n][j];
-			A[rNum][j]+=boundary_factors2[n]*a[n]*legendre_comb[n][j];
+			A[rNum+1][j]+=boundary_factors2[n]*a[n]*legendre_comb[n][j];
 		}
 	}
 	return;
 }		/* -----  end of function solve_A_boundary  ----- */
 #endif
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  solve_B_boundary
+ *  Description:  Apply boundary conditions for beta
+ * =====================================================================================
+ */
+	void
+solve_B_boundary ( )
+{
+	//Fix beta value just outside the star so the numerical radial  derivative at the surface corresponds
+	//to solving it backwards (i.e. using only the point at the surface and the one just below). Also, Apply linear
+	//interpolation of beta for the point just below the surface and just above the inner boundary (this last one
+	//only in the case of zero boundary conditions at the center).
+	//Interpolation at both the inner and outer boundary is unneccesary for purely toroidal runs, while on superconductor
+	//runs interpolation in the inner boundary is unnecesary.
+	#pragma omp parallel for
+	for(int j=1;j<thNum-1;j++){
+		#ifndef SC
+			B[1][j]=0;
+			B[2][j]=B[3][j]/2;
+		#else
+			B[0][j]=2*dr/sc_factors[j]*(B[1][j]*(B[1][j+1]-B[1][j-1])/(2*dth*pow(rmin,2)*sines[j]))+B[2][j];
+		#endif
+		B[rNum][j]=0;
+		B[rNum-1][j]=B[rNum-2][j]/2;
+		B[rNum+1][j]=-B[rNum-1][j];
+	}
+	return;
+}		/* -----  end of function solve_B_boundary  ----- */
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -564,7 +536,7 @@ solve_A_boundary ( )
 	void
 release_memory ( int info )
 {
-	for(int i=0;i<rNum+1;i++){
+	for(int i=0;i<rNum+2;i++){
 		delete[] B[i];
 		B[i]=NULL;
 		delete[] dBr[i];
