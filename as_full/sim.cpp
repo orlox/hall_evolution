@@ -195,7 +195,9 @@ solve_repeated_values ( )
 		th=j*dth;
 		sines[j]=sin(th);
 		cotans[j]=cos(th)/sin(th);
-		sc_factors[j]=initial::eta(rmin,th)*initial::eta(rmin,th)*thtd;
+		#ifdef SC
+			sc_factors[j]=initial::eta(rmin,th)*initial::eta(rmin,th)*thtd;
+		#endif
 	}
 	for(int i=0;i<rNum+2;i++){
 		r=rmin+(i-1)*dr;
