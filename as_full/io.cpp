@@ -60,7 +60,7 @@ read_args ( int argc, char *argv[] )
 	{
 		cerr<<"ERROR: Not enough arguments provided"<<endl;
 		cerr<<"usage is:"<<endl;
-		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)>";
+		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt factor(float<1)> <tNum(int)> <tNumPlot(int)> <th/td(float)>";
 		#ifndef TOROIDAL
 			cerr<<" <l(int)>";
 		#endif
@@ -82,7 +82,7 @@ read_args ( int argc, char *argv[] )
 	){
 		cerr<<"ERROR: Arguments not in the right format"<<endl;
 		cerr<<"usage is:"<<endl;
-		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt(float)> <tNum(int)> <tNumPlot(int)> <th/td(float)>";
+		cerr<<"as_full_run <rNum(int)> <thNum(int)> <dt factor(float<1)> <tNum(int)> <tNumPlot(int)> <th/td(float)>";
 		#ifndef TOROIDAL
 			cerr<<" <l(int)>";
 		#endif
@@ -91,7 +91,7 @@ read_args ( int argc, char *argv[] )
 	//Store values for simulation
 	sim::rNum=atoi(argv[1]);
 	sim::thNum=atoi(argv[2]);
-	sim::dt=atof(argv[3]);
+	sim::factor=atof(argv[3]);
 	sim::tNum=atoi(argv[4]);
 	sim::plotSteps=atoi(argv[5]);
 	sim::thtd=atof(argv[6]);
@@ -170,7 +170,7 @@ create_folder ( )
 	params.open(filename.c_str());
 	params << "rNum:"<< sim::rNum << std::endl;
 	params << "thNum:"<< sim::thNum << std::endl;
-	params << "dt:"<< sim::dt << std::endl;
+	params << "dt factor:"<< sim::factor << std::endl;
 	params << "tNum:"<< sim::tNum << std::endl;
 	params << "plotSteps:"<< sim::plotSteps << std::endl;
 	params << "rmin:"<< sim::rmin << std::endl;
@@ -184,7 +184,7 @@ create_folder ( )
 	filename="results_"+results_folder+"/summary";
 	ofstream summary (filename.c_str(),ios::app);
 	summary << timeStream.str() << "_" << description << " : ";
-	summary << sim::rNum << "x" << sim::thNum << "x" << sim::dt << ", ";
+	summary << sim::rNum << "x" << sim::thNum << "x" << sim::factor << ", ";
 	summary << "thtd:" << sim::thtd << ", ";
 	summary << "rmin:" << sim::rmin << ", ";
 	#ifndef TOROIDAL
@@ -223,7 +223,7 @@ print_header ( )
 	cout << "PARAMETERS CHOSEN:"<< endl;
 	cout << "-Number of Radial steps: "<< sim::rNum << endl;
 	cout << "-Number of Angular steps: "<< sim::thNum << endl;
-	cout << "-Size of timestep: "<< sim::dt << endl;
+	cout << "-Factor of critical timestep: "<< sim::factor << endl;
 	cout << "-Number of Time steps: "<< sim::tNum << endl;
 	cout << "-Save output every "<< sim::plotSteps << " steps" << endl;
 	cout << "-Minimun radius: "<< sim::rmin << endl;
@@ -304,7 +304,7 @@ close_integrals_file ( )
  * =====================================================================================
  */
 	void
-log_field ( int k )
+log_field ( int k, double t )
 {
 	#ifndef TOROIDAL
 		//Construct filename for alpha log file, and open it
@@ -313,6 +313,8 @@ log_field ( int k )
 		string filenameA=AStream.str();
 		ofstream resultsA;
 		resultsA.open(filenameA.c_str());
+		//first line is simulation time
+		resultsA << t << endl;
 		for(int i=1;i<sim::rNum+1;i++){
 			for(int j=0;j<sim::thNum;j++){
 				resultsA << sim::A[i][j] << " ";
@@ -327,6 +329,8 @@ log_field ( int k )
 	string filenameB=BStream.str();
 	ofstream resultsB;
 	resultsB.open(filenameB.c_str());
+	//first line is simulation time
+	resultsB << t << endl;
 	//Log values
 	for(int i=1;i<sim::rNum+1;i++){
 		for(int j=0;j<sim::thNum;j++){
@@ -361,7 +365,7 @@ report_blowup ( int k, int i, int j )
  * =====================================================================================
  */
 	void
-report_progress ( int k )
+report_progress ( int k, double t )
 {
 	stringstream info;
 	//Determine difference in number size between the current timestep and the total number to be run
@@ -372,7 +376,7 @@ report_progress ( int k )
 	//Print current timestep
 	info << k << "/" << sim::tNum << "     ";
 	//Print simulation time in hall and ohmic timescales
-	info << "t/t_h=" << k*sim::dt << "     t/t_d=" << k*sim::dt*sim::thtd;
+	info << "t/t_h=" << t << "     t/t_d=" << t*sim::thtd;
 	cout << info.str() << endl;
 	
 	return;

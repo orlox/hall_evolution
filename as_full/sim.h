@@ -21,7 +21,7 @@ namespace sim{
 //values given as cli arguments.
 extern int rNum;
 extern int thNum;
-extern double dt;
+extern double factor;
 extern int tNum;
 extern int plotSteps;
 extern double thtd;
@@ -36,9 +36,10 @@ extern double rmin;
 	//Number of points used for the multipole fit outside the star
 	extern int l;
 #endif
-//size of spatial steps.
+//size of spatial (and temporal) steps.
 extern double dr;
 extern double dth;
+extern double dt;
 //function to set initial conditions
 void initial_conditions();
 //function that solves values that remain the same through all the simulation

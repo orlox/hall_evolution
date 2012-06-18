@@ -34,11 +34,11 @@ void log_integrals_file(double t, double*B);
 //Close file where integrated quantities are logged
 void close_integrals_file();
 //Creates two files for the complete profiles of alpha and beta
-void log_field(int k);
+void log_field(int k, double t);
 //Prints info relating to a blowup
 void report_blowup(int k,int i,int j);
 //Prints info on the termination of the program
-void report_progress(int k);
+void report_progress(int k,double t);
 //Prints info on the termination of the program
 void report_completion(int info);
 }

@@ -27,7 +27,7 @@ namespace sim{
 //Values given as cli arguments.
 int rNum;
 int thNum;
-double dt;
+double factor;
 int tNum;
 int plotSteps;
 double thtd;
@@ -70,6 +70,8 @@ double rmin;
 #endif
 //Size of spatial steps.
 double dr,dth;
+//Size of timestep, set automatically by code
+double dt=1;
 //The value of pi
 double const Pi=4*atan(1);
 //value of radius and theta in a point of the grid, used multiple times
@@ -204,13 +206,13 @@ solve_repeated_values ( )
 		for(int j=0;j<thNum-1;j++){
 			th=j*dth;
 			#ifndef PUREOHM
-				hall_term_A[i][j]=dt*sines[j]*initial::chi(r,th)/4/dr/dth;
-				hall_rflux[i][j] = dt*initial::chi(r+dr/2,th)/8.0/dr/dth;
-				hall_thflux[i][j]=-dt*initial::chi(r,th+dth/2)/8.0/dr/dth;
+				hall_term_A[i][j]=sines[j]*initial::chi(r,th)/4/dr/dth;
+				hall_rflux[i][j] = initial::chi(r+dr/2,th)/8.0/dr/dth;
+				hall_thflux[i][j]=-initial::chi(r,th+dth/2)/8.0/dr/dth;
 			#endif
-			res_term_A[i][j]=dt*thtd*initial::eta(r,th);
-			res_rflux[i][j]  = dt*thtd*initial::eta(r+dr/2,th)/sin(th)/dr/dr;
-			res_thflux[i][j] = dt*thtd*initial::eta(r,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
+			res_term_A[i][j]=thtd*initial::eta(r,th);
+			res_rflux[i][j]  = thtd*initial::eta(r+dr/2,th)/sin(th)/dr/dr;
+			res_thflux[i][j] = thtd*initial::eta(r,th+dth/2)/r/r/sin(th+dth/2.0)/dth/dth;
 		}
 	}
 	#ifndef TOROIDAL
@@ -247,18 +249,54 @@ simulate ( )
 	io::create_integrals_file();
 
 	//Begin simulation
-	double t;
+	double t=0;
 	time_t t1, t2;
 	time(&t1);
 	for(int k=0;k<=tNum;k++){
+		/////////////////////////////////////////////////////////////Update timestep///////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////THIS SECTION BREAKS NON-CONSTANT eta AND n///////////////////////////////////////////
+		double newdt=100000000;
+		double localnewdt=100000000;
+		double temp=0;
+		//Solve Grad-Shafranov operator at all points
+		//#pragma omp parallel for collapse(2) private(r)
+		for(int i=2;i<rNum+1;i++){
+			for(int j=1;j<thNum-1;j++){
+				r=rmin+(i-1)*dr;
+				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cotans[j]*(A[i][j+1]-A[i][j-1])/2/dth;
+			}
+		}
+		//Obtain critical timestep from Hall Drift
+		//#pragma omp parallel for private(r,th,localnewdt,temp)
+		for(int i=2;i<rNum+1;i++){
+			for(int j=1;j<thNum-1;j++){
+				r=rmin+(i-1)*dr;
+				th=j*dth;
+				//Solve critical timestep
+				temp=dr/sqrt(pow(gsA[i][j]/(r*sines[j]),2)+pow((B[i+1][j]-B[i-1][j])/(2*dr*r*sines[j]),2)+pow((B[i][j+1]-B[i][j-1])/(2*dth*r*r*sines[j]),2));
+				if(temp<localnewdt){
+					localnewdt=temp;
+				}
+			}
+			//#pragma omp critical
+			if(localnewdt<newdt){
+				newdt=localnewdt;
+			}
+		}
+		//If Ohmic critical step is smaller, use that one
+		if(newdt>dr*dr/thtd){
+			newdt=dr*dr/thtd;
+		}
+		dt=factor*newdt;
+		/////////////////////////////////////////////////////////End Update Timestep/////////////////////////////////////////////////////////////////
 		//Log data if k is multiple of plotSteps
 		if(k%plotSteps==0){
-			io::report_progress(k);
-			t=k*dt;
+			std::cout<<"dt:"<<dt<<std::endl;
+			io::report_progress(k,t);
 			//Log integrated quantities
 			io::log_integrals_file(t,solve_integrals());
 			//Log complete profiles for A and B
-			io::log_field(k);
+			io::log_field(k,t);
 			//No need to keep simulating if no output will be produced in next steps
 			if(k+plotSteps>tNum){
 				break;
@@ -276,9 +314,9 @@ simulate ( )
 		for(int i=1;i<rNum+1;i++){
 			for(int j=1;j<thNum-1;j++){
 				//Check for blowups, exit program if that happens
-				if(isinf(dBr[i][j])||isinf(dBth[i][j])
+				if(isinf(dBr[i][j])||isinf(dBth[i][j])||isnan(dBr[i][j])||isnan(dBth[i][j])
 						#ifndef TOROIDAL
-						||isinf(Aaux[i][j])
+						||isinf(Aaux[i][j])||isnan(Aaux[i][j])
 						#endif
 						){
 					if(exit!=1){
@@ -316,6 +354,8 @@ simulate ( )
 		//Solve boundary conditions for alpha
 		solve_A_boundary();
 		#endif
+		//update simulation time
+		t+=dt;
 	}
 	time(&t2);
 	std::cout << std::endl << std::endl << "time: " << difftime(t2,t1) << std::endl;
@@ -340,13 +380,11 @@ solve_new_A ()
 		for(int j=1;j<thNum-1;j++){
 			r=rmin+(i-1)*dr;
 			th=j*dth;
-			//Solve Grad-Shafranov operator at point
-			gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cotans[j]*(A[i][j+1]-A[i][j-1])/2/dth;
 			//Evolve poloidal field function at point
 			if(i!=1){
-				Aaux[i][j]=A[i][j]+res_term_A[i][j]*gsA[i][j];
+				Aaux[i][j]=A[i][j]+dt*res_term_A[i][j]*gsA[i][j];
 				#ifndef PUREOHM
-					Aaux[i][j]+= ((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
+					Aaux[i][j]+= dt*((B[i][j+1]-B[i][j-1])*(A[i+1][j]-A[i-1][j])
 								 -(B[i+1][j]-B[i-1][j])*(A[i][j+1]-A[i][j-1]))*hall_term_A[i][j];
 				#endif
 			}
@@ -370,13 +408,13 @@ solve_new_B ()
 		for(int j=0;j<thNum-1;j++){
 			//Solve radial fluxes on B/sin(th)
 			if(j!=0){
-				dBr[i][j]=res_rflux[i][j]*(B[i+1][j]-B[i][j]);
+				dBr[i][j]=dt*res_rflux[i][j]*(B[i+1][j]-B[i][j]);
 				#ifndef PUREOHM
-					dBr[i][j]+=hall_rflux[i][j]
+					dBr[i][j]+=dt*hall_rflux[i][j]
 						*(B[i][j]+B[i+1][j])
 						*(B[i][j+1]+B[i+1][j+1]-B[i][j-1]-B[i+1][j-1]);
 					#ifndef TOROIDAL
-						dBr[i][j]+=hall_rflux[i][j]
+						dBr[i][j]+=dt*hall_rflux[i][j]
 							*(gsA[i][j]+gsA[i+1][j])
 							*(A[i][j+1]+A[i+1][j+1]-A[i][j-1]-A[i+1][j-1]);
 					#endif
@@ -384,13 +422,13 @@ solve_new_B ()
 			}
 			//Solve theta fluxes on B/sin(th)
 			if(i!=0){
-				dBth[i][j]=res_thflux[i][j]*(B[i][j+1]-B[i][j]);
+				dBth[i][j]=dt*res_thflux[i][j]*(B[i][j+1]-B[i][j]);
 				#ifndef PUREOHM
-					dBth[i][j]+=hall_thflux[i][j]
+					dBth[i][j]+=dt*hall_thflux[i][j]
 						*(B[i][j]+B[i][j+1])
 						*(B[i+1][j]+B[i+1][j+1]-B[i-1][j]-B[i-1][j+1]);
 					#ifndef TOROIDAL
-						dBth[i][j]+=hall_thflux[i][j]
+						dBth[i][j]+=dt*hall_thflux[i][j]
 							*(gsA[i][j]+gsA[i][j+1])
 							*(A[i+1][j]+A[i+1][j+1]-A[i-1][j]-A[i-1][j+1]);
 					#endif
@@ -521,7 +559,7 @@ solve_B_boundary ( )
 			B[0][j]=2*dr/sc_factors[j]*(B[1][j]*(B[1][j+1]-B[1][j-1])/(2*dth*pow(rmin,2)*sines[j]))+B[2][j];
 		#endif
 		B[rNum][j]=0;
-		B[rNum-1][j]=B[rNum-2][j]/2;
+		//B[rNum-1][j]=B[rNum-2][j]/2;
 		B[rNum+1][j]=-B[rNum-1][j];
 	}
 	return;

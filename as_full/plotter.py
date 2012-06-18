@@ -36,7 +36,7 @@ rNum=int(data[1])
 data=params.readline().split(":");
 thNum=int(data[1])
 data=params.readline().split(":");
-dt=float(data[1])
+factor=float(data[1])
 data=params.readline().split(":");
 tNum=int(data[1])
 data=params.readline().split(":");
@@ -107,6 +107,8 @@ while 1:
         data=open(folder+"A_"+str(k),'r')
     except IOError as e:
         break
+    #first line has simulation time
+    t=data.readline()
     i,j=0,0
     for line in data:
         values=line.split(" ")
@@ -123,6 +125,8 @@ while 1:
         data=open(folder+"B_"+str(k),'r')
     except IOError as e:
         break
+    #first line has simulation time
+    t=data.readline()
     i,j=0,0
     for line in data:
         values=line.split(" ")
@@ -145,11 +149,11 @@ while 1:
         i+=1
     fig=plt.figure()
     #add data
-    figtext(0.05, 0.95, "Radial steps: "+str(rNum))
-    figtext(0.3, 0.95, "Angular steps: "+str(thNum))
-    figtext(0.55, 0.95, "Time step: "+str(dt))
-    figtext(0.75, 0.95, "t_h/t_d: "+str(thtd))
-    figtext(0.92, 0.95, "t: "+str(k*dt))
+    figtext(0.02, 0.95, "Radial steps: "+str(rNum)+"     Angular steps: "+str(thNum)+"     Factor: "+str(factor)+ "     t_h/t_d: "+str(thtd)+"     t: "+t)
+    #figtext(0.25, 0.95, "Angular steps: "+str(thNum))
+    #figtext(0.45, 0.95, "Factor: "+str(factor))
+    #figtext(0.6, 0.95, "t_h/t_d: "+str(thtd))
+    #figtext(0.8, 0.95, "t: "+t)
     #create plot
     a=fig.add_subplot(1,2,1)
     plt.imshow(ZA.T,extent=[0,1,-1,1],origin="lower")
