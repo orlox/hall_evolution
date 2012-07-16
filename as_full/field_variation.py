@@ -40,7 +40,7 @@ rNum=int(data[1])
 data=params.readline().split(":");
 thNum=int(data[1])
 data=params.readline().split(":");
-dt=float(data[1])
+factor=float(data[1])
 data=params.readline().split(":");
 tNum=int(data[1])
 data=params.readline().split(":");
@@ -125,6 +125,8 @@ while 1:
         data=open(folder+"A_"+str(k),'r')
     except IOError as e:
         break
+    #first line has simulation time
+    t=float(data.readline())
     i,j=0,0
     for line in data:
         values=line.split(" ")
@@ -141,6 +143,8 @@ while 1:
         data=open(folder+"B_"+str(k),'r')
     except IOError as e:
         break
+    #first line has simulation time
+    t=float(data.readline())
     i,j=0,0
     for line in data:
         values=line.split(" ")
@@ -166,7 +170,6 @@ while 1:
             B_field_k[i][j][1]=-1/r/sin(th)*(A[i+1][j]-A[i][j]+A[i+1][j+1]-A[i][j+1])/2/dr
             #phi component
             B_field_k[i][j][2]=1/r/sin(th)*(B[i][j]+B[i+1][j]+B[i][j+1]+B[i+1][j+1])/4
-
 
     #solve total energy
     energy=0
@@ -216,7 +219,7 @@ while 1:
         for j in range(thNum-1):
             th=j*dth+dth/2
 
-    f.write(str(k*dt) + " " + str(dB_energy) + " " + str(dB_energy_Ohm)+ " " + str(dB_energy_eq)+"\n")
+    f.write(str(t) + " " + str(dB_energy) + " " + str(dB_energy_Ohm)+ " " + str(dB_energy_eq)+"\n")
     print str(num_file)+" "+str(energy)+" "+str(dB_energy)+" "+str(dB_energy_Ohm)+" "+str(dB_energy_eq)
     k+=plotSteps
 

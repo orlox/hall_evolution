@@ -198,7 +198,7 @@ solve_repeated_values ( )
 		sines[j]=sin(th);
 		cotans[j]=cos(th)/sin(th);
 		#ifdef SC
-			sc_factors[j]=initial::eta(rmin,th)*initial::eta(rmin,th)*thtd;
+			sc_factors[j]=initial::eta(rmin,th)*initial::n(rmin,th)*thtd;
 		#endif
 	}
 	for(int i=0;i<rNum+2;i++){
@@ -288,6 +288,9 @@ simulate ( )
 			newdt=dr*dr/thtd;
 		}
 		dt=factor*newdt;
+		if(dt<0.0000000001){
+			dt=0.0000000001;
+		}
 		/////////////////////////////////////////////////////////End Update Timestep/////////////////////////////////////////////////////////////////
 		//Log data if k is multiple of plotSteps
 		if(k%plotSteps==0){
@@ -338,7 +341,7 @@ simulate ( )
 				#endif
 			}
 		}
-		if(exit){
+		if(exit||t>2){
 			return 1;
 		}
 		#ifdef SC
@@ -524,7 +527,9 @@ solve_A_boundary ( )
 	for(int j=1;j<thNum-1;j++){
 		A[1][j]=0;
 		#ifdef SC
-			A[0][j]=-A[2][j]*(sc_factors[j]/dr+(B[1][j+1]-B[1][j-1])/(pow(rmin,2)*sines[j]*4*dth))/(thtd/dr-(B[1][j+1]-B[1][j-1])/(pow(rmin,2)*sines[j]*4*dth));
+			#ifndef PUREOHM
+				A[0][j]=-A[2][j]*(sc_factors[j]*thtd/dr+(B[1][j+1]-B[1][j-1])/(pow(rmin,2)*sines[j]*4*dth))/(sc_factors[j]*thtd/dr-(B[1][j+1]-B[1][j-1])/(pow(rmin,2)*sines[j]*4*dth));
+			#endif
 		#endif
 		A[rNum+1][j]=A[rNum-1][j];
 		for(int n=0;n<l;n++){
@@ -556,7 +561,11 @@ solve_B_boundary ( )
 			B[1][j]=0;
 			B[2][j]=B[3][j]/2;
 		#else
-			B[0][j]=2*dr/sc_factors[j]*(B[1][j]*(B[1][j+1]-B[1][j-1])/(2*dth*pow(rmin,2)*sines[j]))+B[2][j];
+			#ifndef PUREOHM
+				B[0][j]=2*dr/sc_factors[j]*(B[1][j]*(B[1][j+1]-B[1][j-1])/(2*dth*pow(rmin,2)*sines[j]))+B[2][j];
+			#else
+				B[0][j]=B[2][j];
+			#endif
 		#endif
 		B[rNum][j]=0;
 		//B[rNum-1][j]=B[rNum-2][j]/2;

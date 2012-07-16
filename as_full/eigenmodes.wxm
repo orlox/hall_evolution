@@ -1,132 +1,94 @@
 /* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
-/* [ Created with wxMaxima version 11.08.0 ] */
+/* [ Created with wxMaxima version 12.04.0 ] */
+
+/* [wxMaxima: comment start ]
+Eigenmode solver. Solves (with user help) the different Ohm eigenmodes for constant resistivity.
+
+First, the poloidal Ohm modes:
+   [wxMaxima: comment end   ] */
 
 /* [wxMaxima: input   start ] */
-l:2;
+l:1;
+rmin:0.75;
+-(spherical_bessel_y(l,k)*(-1-l)/k-diff(spherical_bessel_y(l,k),k))*spherical_bessel_j(l,k*rmin)
++(spherical_bessel_j(l,k)*(-1-l)/k-diff(spherical_bessel_j(l,k),k))*spherical_bessel_y(l,k*rmin)$
+define(f(k),%)$
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
+plot2d(f(k)*k**2,[k,5,60]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+kk:find_root(f(k)*k**2,k,5,10);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+%**2;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+-spherical_bessel_y(l,kk*rmin)/spherical_bessel_j(l,kk*rmin);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: comment start ]
+Next, the toroidal field with zero boundary conditions
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: input   start ] */
+l:1;
+rmin:0.75;
+spherical_bessel_y(l,k)*spherical_bessel_j(l,k*rmin)
+-spherical_bessel_j(l,k)*spherical_bessel_y(l,k*rmin)$
+define(f(k),%)$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+plot2d(f(k)*k**2,[k,5,60]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+kk:find_root(f(k)*k**2,k,5,10);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+-spherical_bessel_y(l,kk)/spherical_bessel_j(l,kk);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: comment start ]
+Finally, the toroidal field with superconductor boundary conditions
+   [wxMaxima: comment end   ] */
+
+/* [wxMaxima: input   start ] */
+l:1;
+remvalue(rmin)$
+spherical_bessel_j(l,k)*spherical_bessel_y(l,k*rmin)
+-spherical_bessel_y(l,k)*spherical_bessel_j(l,k*rmin)
++rmin*spherical_bessel_j(l,k)*diff(spherical_bessel_y(l,k*rmin),rmin)
+-rmin*spherical_bessel_y(l,k)*diff(spherical_bessel_j(l,k*rmin),rmin)
+$
+define(f(k),%)$
 rmin:0.75;
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
--(spherical_bessel_y(l,k)*(-1-l)/k-diff(spherical_bessel_y(l,k),k))*spherical_bessel_j(l,k*rmin)
-+(spherical_bessel_j(l,k)*(-1-l)/k-diff(spherical_bessel_j(l,k),k))*spherical_bessel_y(l,k*rmin);
+plot2d(f(k)*k**2,[k,2,60]);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-define(f(k),%);
+kk:find_root(f(k)*k**2,k,5,10);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-plot2d(f(k)*k**2,[k,0,20]);
+-spherical_bessel_y(l,kk)/spherical_bessel_j(l,kk);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-kk:find_root(f(k)*k**2,k,15,20);
+solve(s^2-2-2=0,s);
 /* [wxMaxima: input   end   ] */
 
 /* [wxMaxima: input   start ] */
-C:1;
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
--C*((-1-l)*spherical_bessel_y(l,k)/k-diff(spherical_bessel_y(l,k),k));
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-define(c1(k),%);
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-A:float(c1(kk));
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-C*((-1-l)*spherical_bessel_j(l,k)/k-diff(spherical_bessel_j(l,k),k));
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-define(c2(k),%);
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-B:float(c2(kk));
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-f(x):=A*spherical_bessel_j(l,kk*x)+B*spherical_bessel_y(l,kk*x);
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-plot2d(f(x),[x,rmin,1]);
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-(
-E*((l+1)/k*spherical_bessel_y(l,k)+diff(spherical_bessel_y(l,k),k))*spherical_bessel_j(l,r*k)
--E*((l+1)/k*spherical_bessel_j(l,k)+diff(spherical_bessel_j(l,k),k))*spherical_bessel_y(l,r*k)
-)*assoc_legendre_p(l,1,cos(theta))*r*sin(theta);
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-define(alpha(r,theta,E,k,l),%)$
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-((diff(alpha(r,theta,B,k,l),r)/r/sin(theta))**2+(diff(alpha(r,theta,B,k,l),theta)/r**2/sin(theta))**2)**(1/2)$
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-define(BP(r,theta,B,k,l),%)$
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-wxplot3d(BP(r,theta,1,7.81795,2), [r,0.75,1], [theta,0,%pi],
- [grid,60,60],
- [gnuplot_preamble, "set pm3d map"])$
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-wxplot3d(alpha(r,theta,10,19.1279300220322,1), [r,0.75,1], [theta,0,%pi],
- [grid,60,60],
- [gnuplot_preamble, "set pm3d map"])$
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-wxplot2d([BP(0.75,th,4.05715,7.81795,2)], [th,%pi/4-0.0001,%pi/4+0.0001])$
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-5.36845
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-E*((l+1)/k*spherical_bessel_y(l,k)+diff(spherical_bessel_y(l,k),k));
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-define(A(E,k,l),%);
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
--E*((l+1)/k*spherical_bessel_j(l,k)+diff(spherical_bessel_j(l,k),k));
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-define(B(E,k,l),%);
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-A(4.05715,7.81795,2);
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-B(4.05715,7.81795,2);
-/* [wxMaxima: input   end   ] */
-
-/* [wxMaxima: input   start ] */
-float(1/8/%pi);
+7.03266**2;
 /* [wxMaxima: input   end   ] */
 
 /* Maxima can't load/batch files which end with a comment! */
