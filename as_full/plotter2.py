@@ -10,6 +10,10 @@ import math
 from scipy import special
 from matplotlib.colors import LinearSegmentedColormap
 
+#Use a monospace font to avoid change in the size of plots
+#rc('font',**{'family':'monospace','monospace':['Computer Modern Typewriter']})
+rc('font',**{'family':'monospace'})
+
 #get folder name, if not specified as argument, use the latest one
 folder=""
 if len(sys.argv)<2:
@@ -220,10 +224,11 @@ while 1:
     plt.ylim((-1,1))
     plt.xlim((0,2))
     #add data
-    figtext(0.02, 0.95, "Radial steps: "+str(rNum)+"     Angular steps: "+str(thNum)+"     Factor: "+str(factor)+ "     t_h/t_d: "+str(thtd)+"     t: "+t)
+    #figtext(0.02, 0.95, "Radial steps: "+str(rNum)+"     Angular steps: "+str(thNum)+"     Factor: "+str(factor)+ "     t_h/t_d: "+str(thtd)+"     t: "+t)
+    figtext(0.35, 0.9, "t/t_h: "+t)
     #create plot
     plt.contourf(XBvalues,YBvalues,B,levels=levelsB, cmap=mycmap)
-    plt.colorbar()
+    plt.colorbar(format='%.2e')
     #Hide x and y axes
     plt.gca().axes.get_xaxis().set_visible(False)
     plt.gca().axes.get_yaxis().set_visible(False)
@@ -231,12 +236,12 @@ while 1:
     #plt.contour(XAvalues,YAvalues,A,levels=levelsA, colors="#33aa33")
     #Replacing the line just before one with the next two includes labels
     Aplot=plt.contour(XAvalues,YAvalues,A,levels=levelsA, colors="#33aa33")
-    plt.clabel(Aplot, inline=1, fontsize=8)
+    plt.clabel(Aplot, inline=1, fontsize=10, fmt="%.2e")
 
     #save to file
     savefig(folder+"plot_"+num_file+".png", dpi=None, facecolor='w', edgecolor='w',
                 orientation='portrait', papertype=None, format=None,
-                transparent=False, bbox_inches=None, pad_inches=0.0)
+                transparent=False, bbox_inches='tight')
     close()
     print num_file
 
