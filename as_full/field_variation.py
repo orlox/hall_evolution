@@ -252,9 +252,9 @@ while 1:
     dB_energy_Ohm=dB_energy_Ohm+2*pow(dipoleOhm,2)/energy_Ohm-4*dipoleOhm*multipoles[0]/sqrt(energy_Ohm*energy)
     dB_energy_eq=dB_energy_eq+2*pow(dipoleEq,2)/energy_eq-4*dipoleEq*multipoles[0]/sqrt(energy_eq*energy)
     for l in range(0,lNum):
-        dB_energy=dB_energy+(l+2)*pow(multipoles[l],2)/energy
         dB_energy_Ohm=dB_energy_Ohm+(l+2)*pow(multipoles[l],2)/energy
         dB_energy_eq=dB_energy_eq+(l+2)*pow(multipoles[l],2)/energy
+        dB_energy=dB_energy+(l+2)*(pow(multipoles_i[l],2)/initial_energy-2*multipoles_i[l]*multipoles[l]/sqrt(energy*initial_energy)+pow(multipoles[l],2)/energy)
 
     f.write(str(t) + " " + str(dB_energy) + " " + str(dB_energy_Ohm)+ " " + str(dB_energy_eq)+"\n")
     print str(num_file)+" "+str(energy)+" "+str(dB_energy)+" "+str(dB_energy_Ohm)+" "+str(dB_energy_eq)
