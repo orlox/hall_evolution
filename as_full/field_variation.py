@@ -7,6 +7,7 @@ from pylab import *
 import sys
 import os
 import math
+from scipy import special
 
 #Fundamental Ohm mode for rmin=0.75
 A1=-0.52004
@@ -19,6 +20,7 @@ def A_Ohm_function(r,th):
 rmin=-0.75
 def A_eq_function(r,th):
 	return 1/2.0*pow(sin(th),2)*((3*pow(rmin,5)-5*pow(rmin,3))/r+5*pow(r,2)-3*pow(r,4))/(2-5*pow(rmin,3)+3*pow(rmin,5));
+
 
 #Get name of folder with results
 folder=sys.argv[1]
@@ -49,17 +51,33 @@ data=params.readline().split(":");
 rmin=float(data[1])
 data=params.readline().split(":");
 thtd=float(data[1])
+data=params.readline().split(":");
+lNum=int(data[1])
 params.close()
 
 #solve values of dr and dth
 dr=(1.0-rmin)/(rNum-1)
 dth=math.pi/(thNum-1)
 
+#store P_l^1(cos(theta)) at the surface, used to solve multipoles. These are calculated at grid mid-points to perform integrations
+plone=zeros((lNum,thNum));
+for j in range(thNum):
+    alp=special.lpmn(1, lNum+1, math.cos((j+0.5)*dth))
+    for l in range(lNum):
+        plone[l][j]=alp[0][1][l+1]
+
+#Solve multipole coefficient l (l is actually l-1, so the dipole is l=0) of the field with poloidal field function A
+def multipole_l(l,A):
+    value=0
+    for j in range(0,thNum-1):
+        value+=(A[rNum-1][j]+A[rNum-1][j+1])/2*plone[l][j]*dth
+    return value*math.sqrt(math.pi*(2.0*l+3))/(l+2.0)*sqrt(1.0/8/math.pi)
+
 #Create array to store A and B at each step
-A=zeros((rNum+1,thNum+1));
-A_Ohm=zeros((rNum+1,thNum+1));
-A_eq=zeros((rNum+1,thNum+1));
-B=zeros((rNum+1,thNum+1));
+A=zeros((rNum,thNum));
+A_Ohm=zeros((rNum,thNum));
+A_eq=zeros((rNum,thNum));
+B=zeros((rNum,thNum));
 
 #Fill array with ohm eigenmode for A_Ohm
 for i in range(rNum):
@@ -68,6 +86,12 @@ for i in range(rNum):
         th=j*dth
         A_Ohm[i][j]=A_Ohm_function(r,th)
         A_eq[i][j]=A_eq_function(r,th)
+
+#Create array for multipole coefficients
+multipoles=zeros((lNum));
+multipoles_i=zeros((lNum));
+dipoleOhm=multipole_l(0,A_Ohm)
+dipoleEq=multipole_l(0,A_eq)
 
 #Create array to store the vector values of the field at the initial and later times
 #field is solved at midpoints in the grid.
@@ -96,7 +120,7 @@ for i in range(rNum-1):
         B_field_Ohm[i][j][2]=0
         B_field_eq[i][j][2]=0
 
-#solve energy of Ohm eigenmode and equilibrium field
+#solve energy of Ohm eigenmode and equilibrium field, first the internal energy
 energy_Ohm=0
 energy_eq=0
 for i in range(rNum-1):
@@ -107,6 +131,9 @@ for i in range(rNum-1):
         energy_eq+=(pow(B_field_eq[i][j][0],2)+pow(B_field_eq[i][j][1],2)+pow(B_field_eq[i][j][2],2))*pow(r,2)*sin(th)
 energy_Ohm=energy_Ohm*dr*dth/4
 energy_eq=energy_eq*dr*dth/4
+#now the external energy
+energy_Ohm=energy_Ohm+2*pow(dipoleOhm,2)
+energy_eq=energy_eq+2*pow(dipoleEq,2)
 
 #analyze all data
 k=0
@@ -157,6 +184,10 @@ while 1:
         i+=1
     data.close()
 
+    #solve multipole coefficients
+    for l in range(lNum):
+        multipoles[l]=multipole_l(l,A)
+
     Bmaxth=0
     #solve vector magnetic field
     for i in range(rNum-1):
@@ -171,7 +202,7 @@ while 1:
             #phi component
             B_field_k[i][j][2]=1/r/sin(th)*(B[i][j]+B[i+1][j]+B[i][j+1]+B[i+1][j+1])/4
 
-    #solve total energy
+    #solve total internal energy
     energy=0
     for i in range(rNum-1):
         r=i*dr+dr/2+rmin
@@ -179,8 +210,11 @@ while 1:
             th=j*dth+dth/2
             energy+=(pow(B_field_k[i][j][0],2)+pow(B_field_k[i][j][1],2)+pow(B_field_k[i][j][2],2))*pow(r,2)*sin(th)
     energy=energy*dr*dth/4
+    #add total external energy
+    for l in range(lNum):
+        energy+=(l+2)*pow(multipoles[l],2)
 
-    #if this is the first timestep, store initial_energy and field.
+    #if this is the first timestep, store initial_energy and field and multipole coefficients.
     if k==0:
         initial_energy=energy
         for i in range(rNum-1):
@@ -188,8 +222,10 @@ while 1:
                 B_field_i[i][j][0]=B_field_k[i][j][0]
                 B_field_i[i][j][1]=B_field_k[i][j][1]
                 B_field_i[i][j][2]=B_field_k[i][j][2]
+        for l in range(lNum):
+            multipoles_i[l]=multipoles[l]
     
-    #solve integrals of the different dB^2, fields must be corrected to have energy equal to 1
+    #solve integrals of the different dB^2 inside the star, fields must be corrected to have energy equal to 1
     dB_energy=0
     dB_energy_Ohm=0
     dB_energy_eq=0
@@ -212,12 +248,13 @@ while 1:
     dB_energy=dB_energy*dth*dr/4
     dB_energy_Ohm=dB_energy_Ohm*dth*dr/4
     dB_energy_eq=dB_energy_eq*dth*dr/4
-
-    #solve integral of deltaB with respect to Ohm fundamental mode, at each time, field must be corrected to have energy equal to 1
-    for i in range(rNum-1):
-        r=i*dr+dr/2+rmin
-        for j in range(thNum-1):
-            th=j*dth+dth/2
+    #add contribution to dBs outside the star
+    dB_energy_Ohm=dB_energy_Ohm+2*pow(dipoleOhm,2)/energy_Ohm-4*dipoleOhm*multipoles[0]/sqrt(energy_Ohm*energy)
+    dB_energy_eq=dB_energy_eq+2*pow(dipoleEq,2)/energy_eq-4*dipoleEq*multipoles[0]/sqrt(energy_eq*energy)
+    for l in range(0,lNum):
+        dB_energy=dB_energy+(l+2)*pow(multipoles[l],2)/energy
+        dB_energy_Ohm=dB_energy_Ohm+(l+2)*pow(multipoles[l],2)/energy
+        dB_energy_eq=dB_energy_eq+(l+2)*pow(multipoles[l],2)/energy
 
     f.write(str(t) + " " + str(dB_energy) + " " + str(dB_energy_Ohm)+ " " + str(dB_energy_eq)+"\n")
     print str(num_file)+" "+str(energy)+" "+str(dB_energy)+" "+str(dB_energy_Ohm)+" "+str(dB_energy_eq)
