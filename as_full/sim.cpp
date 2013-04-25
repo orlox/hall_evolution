@@ -260,7 +260,7 @@ simulate ( )
 		double temp=0;
 		//Solve Grad-Shafranov operator at all points
 		//#pragma omp parallel for collapse(2) private(r)
-		for(int i=2;i<rNum+1;i++){
+		for(int i=1;i<rNum+1;i++){
 			for(int j=1;j<thNum-1;j++){
 				r=rmin+(i-1)*dr;
 				gsA[i][j]=(A[i+1][j]+A[i-1][j]-2*A[i][j])/dr/dr+1/r/r*(A[i][j+1]+A[i][j-1]-2*A[i][j])/dth/dth-1/r/r*cotans[j]*(A[i][j+1]-A[i][j-1])/2/dth;
@@ -341,7 +341,7 @@ simulate ( )
 				#endif
 			}
 		}
-		if(exit||t>2){
+		if(exit){//||t>2){
 			return 1;
 		}
 		#ifdef SC
@@ -522,6 +522,8 @@ solve_A_boundary ( )
 		}
 	}
 	//Fix A value at the inner boundary to zero and solve value of inner point to set superconductor boundary condition.
+    //If not using SC boundary conditions, set A value such that the second radial derivative of A is zero at the boundary,
+    //which is equivalent to gsA=0 there.
 	//Then, perform summation to impose boundary condition on the surface.
 	#pragma omp parallel for
 	for(int j=1;j<thNum-1;j++){
@@ -530,6 +532,8 @@ solve_A_boundary ( )
 			#ifndef PUREOHM
 				A[0][j]=-A[2][j]*(sc_factors[j]*thtd/dr+(B[1][j+1]-B[1][j-1])/(pow(rmin,2)*sines[j]*4*dth))/(sc_factors[j]*thtd/dr-(B[1][j+1]-B[1][j-1])/(pow(rmin,2)*sines[j]*4*dth));
 			#endif
+        #else
+            A[0][j]=-A[2][j];
 		#endif
 		A[rNum+1][j]=A[rNum-1][j];
 		for(int n=0;n<l;n++){
