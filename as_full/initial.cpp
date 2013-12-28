@@ -38,29 +38,28 @@ A ( double r, double th )
 {
 	//#######################OHM EIGENMODES#######################
 	//The following conditions correspond to Ohm eigenmodes
-	//for constant resistivity, and are normalized so B_pol
-	//is very close to 1 at its maximun. This values require
-	//r_min=0.75.
+	//for constant resistivity, normalized as in Marchant et al. 2014.
+    //This values require r_min=0.75.
 	//MODE 1,1
-	int l=1;
-	double A=-0.55882;
-	double B=-0.52004;
-	double k=7.03266;
+//	int l=1;
+//	double A=1.05967;
+//	double B=0.98613;
+//	double k=7.03266;
 	//MODE 2,1
 //	int l=1;
-//	double A=-0.72288;
-//	double B=-0.20659;
+//	double A=1.45340;
+//	double B=0.41536;
 //	double k=19.12793;
 	//MODE 1,2
 //	int l=2;
-//	double A=-0.52101;
-//	double B=-0.04764;
+//	double A=1.03273;
+//	double B=0.09443;
 //	double k=7.81795;
 	//MODE 2,2
-//	int l=2;
-//	double A=-0.31188;
-//	double B=0.39534;
-//	double k=19.46616;
+	int l=2;
+	double A=0.69213;
+	double B=-0.87735;
+	double k=19.46616;
 
 	return r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
 	//######################END OHM EIGENMODES####################
@@ -83,29 +82,28 @@ B ( double r, double th )
 {
 	//#######################OHM EIGENMODES#######################
 	//The following conditions correspond to Ohm eigenmodes
-	//for constant resistivity, and are normalized so B_tor
-	//is very close to 1 at its maximun. These values require
-	//r_min=0.75.
+	//for constant resistivity, normalized as in Marchant et al. 2014.
+    //This values require r_min=0.75.
 	//MODE 1,1
-	int l=1;
-	double A=-2.00235;
-	double B=10.81346;
-	double k=12.67071;
+//	int l=1;
+//	double A=3.49953;
+//	double B=-18.89879;
+//	double k=12.67071;
 	//MODE 2,1
 //	int l=1;
-//	double A=-1.88596;
-//	double B=20.32767;
+//	double A=3.55576;
+//	double B=-38.32549;
 //	double k=25.18557;
 	//MODE 1,2
 //	int l=2;
-//	double A=6.32868;
-//	double B=3.82300;
+//	double A=-12.36623;
+//	double B=-7.47013;
 //	double k=12.87682;
 	//MODE 2,2
-//	int l=2;
-//	double A=13.11642;
-//	double B=3.72583;
-//	double k=25.29089;
+	int l=2;
+	double A=-27.65962;
+	double B=-7.85695;
+	double k=25.29089;
 
 	return r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
 	//######################END OHM EIGENMODES####################
