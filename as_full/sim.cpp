@@ -441,7 +441,6 @@ solve_new_B ()
 	}
 	return;
 }		/* -----  end of function solve_new_B  ----- */
-
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  solve_integrals
@@ -457,13 +456,13 @@ solve_integrals ( )
 {
 	//Initialize array with adequate size, and set values to zero
 	#ifdef TOROIDAL
-		double *integrals=new double[2];
-		integrals[0]=integrals[1]=0;
+		double *integrals=new double[3];
+		integrals[0]=integrals[1]=integrals[2]=0;
 	#else
 		//When the poloidal field is considered, the individual energy of each multipole outside the star,
 		//and the sum of all the multipoles is also given.
-		double *integrals=new double[4+l];
-		for(int n=0;n<4+l;n++){
+		double *integrals=new double[5+l];
+		for(int n=0;n<5+l;n++){
 			integrals[n]=0;
 		}
 	#endif
@@ -477,11 +476,15 @@ solve_integrals ( )
 			th=(0.5+j)*dth;
 			//Toroidal flux
 			integrals[0]+=(B[i][j]+B[i+1][j]+B[i][j+1]+B[i+1][j+1])/4/sin(th);
+            //E/(dE/dt)
+			integrals[1]+=pow((B[i+1][j]-B[i][j]+B[i+1][j+1]-B[i][j+1])/2/dr,2)/sin(th)+pow((B[i][j+1]-B[i][j]+B[i+1][j+1]-B[i+1][j])/2/dth,2)/r/r/sin(th);
 			//Toroidal energy
-			integrals[1]+=pow((B[i][j]+B[i+1][j]+B[i][j+1]+B[i+1][j+1])/4,2)/sin(th);
+			integrals[2]+=pow((B[i][j]+B[i+1][j]+B[i][j+1]+B[i+1][j+1])/4,2)/sin(th);
 			#ifndef TOROIDAL
+                //E/(dE/dt)
+			    integrals[1]+=pow((gsA[i][j]+gsA[i+1][j]+gsA[i][j+1]+gsA[i+1][j+1])/4,2)/sin(th);
 				//Poloidal energy
-				integrals[2]+=pow((A[i+1][j]-A[i][j]+A[i+1][j+1]-A[i][j+1])/2/dr,2)/sin(th)+pow((A[i][j+1]-A[i][j]+A[i+1][j+1]-A[i+1][j])/2/dth,2)/r/r/sin(th);
+				integrals[3]+=pow((A[i+1][j]-A[i][j]+A[i+1][j+1]-A[i][j+1])/2/dr,2)/sin(th)+pow((A[i][j+1]-A[i][j]+A[i+1][j+1]-A[i+1][j])/2/dth,2)/r/r/sin(th);
 			#endif
 		}
 	}
@@ -489,17 +492,19 @@ solve_integrals ( )
 	//the first factor is from integration over phi, and the second one is the factor present in the calculation
 	//of the magnetic energy.
 	integrals[0]=integrals[0]*dr*dth;
-	integrals[1]=integrals[1]*dr*dth/4;
+	integrals[1]=integrals[1]*dr*dth/2*thtd;
+	integrals[2]=integrals[2]*dr*dth/4;
 	#ifndef TOROIDAL
-		integrals[2]=integrals[2]*dr*dth/4;
+		integrals[3]=integrals[3]*dr*dth/4;
 		//Solve external poloidal energy using the coefficients of the expansion outside the star
 		//the coefficients "a" are missing some terms to represent the ones used in the notes
 		for(int n=0;n<l;n++){
 			//integrals[4+n]=pow(a[n],2)*(n+2)/(8*Pi);
-			integrals[4+n]=pow(a[n],2)*(n+2)/(8*Pi);
-			integrals[3]+=integrals[4+n];
+			integrals[5+n]=pow(a[n],2)*(n+2)/(8*Pi);
+			integrals[4]+=integrals[5+n];
 		}
 	#endif
+    integrals[1]=(integrals[2]+integrals[3]+integrals[4])/integrals[1];
 	return integrals;
 }		/* -----  end of function solve_integrals  ----- */
 

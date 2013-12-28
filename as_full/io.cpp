@@ -248,11 +248,11 @@ create_integrals_file ( )
 	string filename="results_"+results_folder+"/"+timeStream.str()+"_"+description+"/integrals.dat";
 	integrals_file.open(filename.c_str());
 	#ifdef TOROIDAL
-		integrals_file << "#t F_t E_T" << endl;
+        integrals_file << "#1:t 2:F_t 3:tau 4:E_T" << endl;
 	#else
-		integrals_file << "#t F_t E_T E_Pi E_Pe" ;
+        integrals_file << "#1:t 2:F_t 3:tau 4:E_T 5:E_Pi 6:E_Pe";
 		for(int n=1;n<=sim::l;n++){
-			integrals_file << " E_" << n;
+			integrals_file << " " << 5+2*n << ":E_" << n << " " << 6+2*n << ":a_" << n;
 		}
 		integrals_file << endl;
 	#endif
@@ -268,13 +268,17 @@ create_integrals_file ( )
 	void
 log_integrals_file ( double t, double *integrals )
 {
+    double E=integrals[2];
+    #ifndef TOROIDAL
+        E=E+integrals[3]+integrals[4];
+    #endif
 	#ifdef TOROIDAL
-		integrals_file << t << " " << integrals[0] << " " << integrals[1] << endl;
+        integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << endl;
 	#else
-		integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << " " << integrals[3];
+        integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << " " << integrals[3] << " " << integrals[4];
 		//Log energy of multipoles outside the star
 		for(int n=1;n<=sim::l;n++){
-			integrals_file << " " << integrals[3+n];
+            integrals_file << " " << integrals[4+n] << " " << sim::a[n-1];
 		}
 		integrals_file << endl;
 	#endif

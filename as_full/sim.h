@@ -35,6 +35,8 @@ extern double rmin;
 #ifndef TOROIDAL
 	//Number of points used for the multipole fit outside the star
 	extern int l;
+	//Values of the coefficients that give the poloidal field outside the star.
+	extern double *a;
 #endif
 //size of spatial (and temporal) steps.
 extern double dr;
