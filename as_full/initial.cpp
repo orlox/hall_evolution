@@ -41,10 +41,10 @@ A ( double r, double th )
 	//for constant resistivity, normalized as in Marchant et al. 2014.
     //This values require r_min=0.75.
 	//MODE 1,1
-//	int l=1;
-//	double A=1.05967;
-//	double B=0.98613;
-//	double k=7.03266;
+	int l=1;
+	double A=1.05967;
+	double B=0.98613;
+	double k=7.03266;
 	//MODE 2,1
 //	int l=1;
 //	double A=1.45340;
@@ -56,10 +56,10 @@ A ( double r, double th )
 //	double B=0.09443;
 //	double k=7.81795;
 	//MODE 2,2
-	int l=2;
-	double A=0.69213;
-	double B=-0.87735;
-	double k=19.46616;
+//	int l=2;
+//	double A=0.69213;
+//	double B=-0.87735;
+//	double k=19.46616;
 
 	return r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
 	//######################END OHM EIGENMODES####################
@@ -85,10 +85,10 @@ B ( double r, double th )
 	//for constant resistivity, normalized as in Marchant et al. 2014.
     //This values require r_min=0.75.
 	//MODE 1,1
-//	int l=1;
-//	double A=3.49953;
-//	double B=-18.89879;
-//	double k=12.67071;
+	int l=1;
+	double A=3.49953;
+	double B=-18.89879;
+	double k=12.67071;
 	//MODE 2,1
 //	int l=1;
 //	double A=3.55576;
@@ -100,10 +100,10 @@ B ( double r, double th )
 //	double B=-7.47013;
 //	double k=12.87682;
 	//MODE 2,2
-	int l=2;
-	double A=-27.65962;
-	double B=-7.85695;
-	double k=25.29089;
+//	int l=2;
+//	double A=-27.65962;
+//	double B=-7.85695;
+//	double k=25.29089;
 
 	return r*(A*gsl_sf_bessel_jl(l,k*r)+B*gsl_sf_bessel_yl(l,k*r))*gsl_sf_legendre_Plm(l,1,cos(th))*sin(th);
 	//######################END OHM EIGENMODES####################
