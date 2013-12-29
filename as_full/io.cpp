@@ -24,6 +24,7 @@
 #include	<math.h>
 #include	<stdlib.h>
 #include	<signal.h>
+#include    <gsl/gsl_sf.h>
 #include	"string.h"
 #include	"io.h"
 #include	"sim.h"
@@ -38,6 +39,10 @@ ofstream integrals_file;
 string results_folder;
 //user specified description to use
 string description;
+//factors used to solve the radial components of B at the pole
+double *Br_factors;
+//The value of pi
+double const Pi=4*atan(1);
 
 
 /* 
@@ -103,6 +108,12 @@ read_args ( int argc, char *argv[] )
 		results_folder=argv[7];
 		description=argv[8];
 	#endif
+    Br_factors=new double[sim::l];
+    gsl_sf_legendre_Pl_array (sim::l, 1, Br_factors);
+    for (int i=1;i<=sim::l;i++){
+        Br_factors[i-1]=-Br_factors[i-1]*sqrt((2*i+1)/(4*Pi))*(i+1);
+    }
+
 	return 0;
 }		/* -----  end of function read_args  ----- */
 
@@ -252,7 +263,7 @@ create_integrals_file ( )
 	#else
         integrals_file << "#1:t 2:F_t 3:tau 4:E_T 5:E_Pi 6:E_Pe";
 		for(int n=1;n<=sim::l;n++){
-			integrals_file << " " << 5+2*n << ":E_" << n << " " << 6+2*n << ":a_" << n;
+			integrals_file << " " << 4+3*n << ":E_" << n << " " << 5+3*n << ":a_" << n << " " << 6+3*n << ":B_r" << n;
 		}
 		integrals_file << endl;
 	#endif
@@ -278,7 +289,7 @@ log_integrals_file ( double t, double *integrals )
         integrals_file << t << " " << integrals[0] << " " << integrals[1] << " " << integrals[2] << " " << integrals[3] << " " << integrals[4];
 		//Log energy of multipoles outside the star
 		for(int n=1;n<=sim::l;n++){
-            integrals_file << " " << integrals[4+n] << " " << sim::a[n-1];
+            integrals_file << " " << integrals[4+n] << " " << sim::a[n-1] << " " << sim::a[n-1]*Br_factors[n-1];
 		}
 		integrals_file << endl;
 	#endif
